@@ -105,7 +105,7 @@ npx prisma db push
 ```bash
 npm run dev
 ```
-Open **[https://ai-career-navigator-official.vercel.app/](https://ai-career-navigator-official.vercel.app/)** in your browser to run the app.
+Open **[AI Career Navigator](https://ai-career-navigator-official.vercel.app/)** in your browser to run the app.
 
 ---
 
