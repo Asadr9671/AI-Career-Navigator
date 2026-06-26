@@ -20,6 +20,7 @@ import { db } from "@/lib/db";
 import { analyzeResume } from "@/lib/ai-service";
 import { extractTextFromPdf, isResume, truncateForModel, validateResume } from "@/lib/resume-parser";
 import { sanitizeTargetRole, type AnalysisResult, type ApiResponse } from "@/lib/types";
+import { pushToCommunityStore } from "@/lib/community-store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // LLM call can take a while
@@ -134,6 +135,11 @@ export async function POST(req: NextRequest) {
     id: savedId,
     created_at: createdAt ?? new Date().toISOString(),
   };
+
+  // Push to global community KV store asynchronously (non-blocking)
+  pushToCommunityStore(payload).catch((err) => {
+    console.error("[analyze] Failed to push to community store:", err);
+  });
 
   return NextResponse.json(
     { data: payload, error: false, message: "ok" } satisfies ApiResponse<AnalysisResult>,
