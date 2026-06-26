@@ -769,13 +769,13 @@ export default function ResultsView() {
                 initialDelay={0.1}
               >
                 {analysis.gaps.map((g, idx) => (
-                  <Reveal key={`${g}-${idx}`} as="div" variant="up" i={idx}>
+                  <Reveal key={`${g}-${idx}`} as="div" variant="up" i={idx} className="max-w-full">
                     <Badge
                       variant="outline"
-                      className="border-rose-500/25 bg-rose-500/10 text-rose-200 gap-1.5 px-3 py-1.5 text-sm font-medium"
+                      className="max-w-full min-w-0 break-words whitespace-normal border-rose-500/25 bg-rose-500/10 text-rose-200 gap-1.5 px-3 py-1.5 text-left text-sm font-medium leading-snug"
                     >
-                      {g}
-                      <X className="size-3.5 opacity-80" />
+                      <span className="min-w-0 break-words">{g}</span>
+                      <X className="size-3.5 shrink-0 opacity-80" />
                     </Badge>
                   </Reveal>
                 ))}
@@ -810,13 +810,13 @@ export default function ResultsView() {
                 initialDelay={0.15}
               >
                 {analysis.strengths.map((s, idx) => (
-                  <Reveal key={`${s}-${idx}`} as="div" variant="up" i={idx}>
+                  <Reveal key={`${s}-${idx}`} as="div" variant="up" i={idx} className="max-w-full">
                     <Badge
                       variant="outline"
-                      className="border-emerald-500/25 bg-emerald-500/10 text-emerald-200 gap-1.5 px-3 py-1.5 text-sm font-medium"
+                      className="max-w-full min-w-0 break-words whitespace-normal border-emerald-500/25 bg-emerald-500/10 text-emerald-200 gap-1.5 px-3 py-1.5 text-left text-sm font-medium leading-snug"
                     >
-                      {s}
-                      <Check className="size-3.5 opacity-80" />
+                      <span className="min-w-0 break-words">{s}</span>
+                      <Check className="size-3.5 shrink-0 opacity-80" />
                     </Badge>
                   </Reveal>
                 ))}
