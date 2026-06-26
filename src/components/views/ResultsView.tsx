@@ -42,7 +42,8 @@ import { useToast } from "@/hooks/use-toast";
 
 /* --------------------------------- helpers -------------------------------- */
 
-function slugify(s: string): string {
+function slugify(s: string | undefined | null): string {
+  if (!s || typeof s !== "string") return "role";
   return s
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -168,6 +169,17 @@ async function exportPDF(
   toast: ReturnType<typeof useToast>["toast"]
 ): Promise<void> {
   try {
+    // Defensive fallbacks — the analysis object should already be normalized
+    // by the caller, but we double-guard here so a malformed analysis never
+    // crashes the PDF export.
+    const role = analysis.target_role || "Your Role";
+    const gaps = Array.isArray(analysis.gaps) ? analysis.gaps : [];
+    const strengths = Array.isArray(analysis.strengths) ? analysis.strengths : [];
+    const roadmap = Array.isArray(analysis.roadmap) ? analysis.roadmap : [];
+    const justification =
+      typeof analysis.score_justification === "string" ? analysis.score_justification : "";
+    const dimensions = Array.isArray(analysis.dimensions) ? analysis.dimensions : [];
+
     const doc = await PDFDocument.create();
     const helv = await doc.embedFont(StandardFonts.Helvetica);
     const helvB = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -178,7 +190,7 @@ async function exportPDF(
     const lineH = 18;
     const today = todayISO();
 
-    const totalPages = 1 + Math.ceil(analysis.roadmap.length / 3); // 1 cover + weeks/3
+    const totalPages = 1 + Math.ceil(roadmap.length / 3); // 1 cover + weeks/3
 
     function drawFooter(page: PDFPage, idx: number) {
       const label = `${idx} / ${totalPages}`;
@@ -214,7 +226,7 @@ async function exportPDF(
     });
     y -= lineH;
 
-    cover.drawText(`Target Role: ${analysis.target_role}`, {
+    cover.drawText(`Target Role: ${role}`, {
       x: M,
       y,
       size: 11,
@@ -224,7 +236,7 @@ async function exportPDF(
     y -= lineH;
 
     cover.drawText(
-      `Readiness Score: ${analysis.score} — ${analysis.score_label}`,
+      `Readiness Score: ${analysis.score ?? 0} — ${analysis.score_label ?? `${analysis.score ?? 0}% ready`}`,
       {
         x: M,
         y,
@@ -236,7 +248,7 @@ async function exportPDF(
     y -= lineH * 2;
 
     // Score justification (may be absent on older analyses)
-    if (analysis.score_justification && analysis.score_justification.trim()) {
+    if (justification && justification.trim()) {
       cover.drawText("Score Justification:", {
         x: M,
         y,
@@ -246,7 +258,7 @@ async function exportPDF(
       });
       y -= lineH;
       for (const ln of wrapText(
-        analysis.score_justification,
+        justification,
         helv,
         10,
         W - M * 2
@@ -265,7 +277,7 @@ async function exportPDF(
     }
 
     // Dimension breakdown (may be absent on older analyses)
-    if (analysis.dimensions && analysis.dimensions.length > 0) {
+    if (dimensions && dimensions.length > 0) {
       cover.drawText("Score Breakdown:", {
         x: M,
         y,
@@ -274,7 +286,7 @@ async function exportPDF(
         color: rgb(0.22, 0.22, 0.28),
       });
       y -= lineH;
-      for (const dim of analysis.dimensions) {
+      for (const dim of dimensions) {
         const label = dimensionLabel(dim.name);
         const evidencePart = dim.evidence ? ` — ${dim.evidence}` : "";
         const line = `•  ${label}: ${dim.score}/100${evidencePart}`;
@@ -303,7 +315,7 @@ async function exportPDF(
       color: rgb(0.8, 0.22, 0.32),
     });
     y -= lineH;
-    for (const g of analysis.gaps) {
+    for (const g of gaps) {
       const lines = wrapText(`•  ${g}`, helv, 10, W - M * 2 - 8);
       for (const ln of lines) {
         if (y < M + lineH) break;
@@ -329,7 +341,7 @@ async function exportPDF(
       color: rgb(0.1, 0.6, 0.42),
     });
     y -= lineH;
-    for (const s of analysis.strengths) {
+    for (const s of strengths) {
       const lines = wrapText(`•  ${s}`, helv, 10, W - M * 2 - 8);
       for (const ln of lines) {
         if (y < M + lineH) break;
@@ -347,7 +359,7 @@ async function exportPDF(
     drawFooter(cover, 1);
 
     /* --------------------- Pages 2-4: Roadmap (3 / page) -------------------- */
-    const weeks = analysis.roadmap;
+    const weeks = roadmap;
     let pageIdx = 1;
     for (let i = 0; i < weeks.length; i += 3) {
       const page = doc.addPage([W, H]);
@@ -434,7 +446,7 @@ async function exportPDF(
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `career-roadmap-${slugify(analysis.target_role)}-${today}.pdf`;
+    a.download = `career-roadmap-${slugify(role)}-${today}.pdf`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -463,7 +475,36 @@ export default function ResultsView() {
   const [displayScore, setDisplayScore] = React.useState(0);
   const [pdfLoading, setPdfLoading] = React.useState(false);
 
-  const analysis = currentAnalysis;
+  // Normalize the analysis so all fields are always present with safe defaults
+  // — defends against partially-formed analysis objects (e.g. if the store was
+  // hydrated from a stale source or an older analysis without the new fields).
+  // Without this, `analysis.gaps.length` or `slugify(analysis.target_role)`
+  // can throw when those fields are undefined.
+  const analysis = React.useMemo(() => {
+    if (!currentAnalysis) return null;
+    return {
+      ...currentAnalysis,
+      id: currentAnalysis.id,
+      target_role:
+        typeof currentAnalysis.target_role === "string" && currentAnalysis.target_role.trim()
+          ? currentAnalysis.target_role
+          : "Your Role",
+      score: typeof currentAnalysis.score === "number" ? currentAnalysis.score : 0,
+      score_label:
+        typeof currentAnalysis.score_label === "string" && currentAnalysis.score_label
+          ? currentAnalysis.score_label
+          : `${typeof currentAnalysis.score === "number" ? currentAnalysis.score : 0}% ready`,
+      gaps: Array.isArray(currentAnalysis.gaps) ? currentAnalysis.gaps : [],
+      strengths: Array.isArray(currentAnalysis.strengths) ? currentAnalysis.strengths : [],
+      roadmap: Array.isArray(currentAnalysis.roadmap) ? currentAnalysis.roadmap : [],
+      dimensions: Array.isArray(currentAnalysis.dimensions) ? currentAnalysis.dimensions : undefined,
+      score_justification:
+        typeof currentAnalysis.score_justification === "string"
+          ? currentAnalysis.score_justification
+          : undefined,
+      created_at: currentAnalysis.created_at,
+    };
+  }, [currentAnalysis]);
 
   // Animate the gauge from 0 → score on mount (and whenever score changes).
   React.useEffect(() => {
@@ -471,7 +512,8 @@ export default function ResultsView() {
       setDisplayScore(0);
       return;
     }
-    const target = analysis.score;
+    const rawTarget = Number(analysis.score);
+    const target = Number.isFinite(rawTarget) ? rawTarget : 0;
     let raf = 0;
     const start = performance.now();
     const dur = 1200;
@@ -518,11 +560,12 @@ export default function ResultsView() {
     );
   }
 
-  const score = analysis.score;
+  const rawScore = Number(analysis.score);
+  const score = Number.isFinite(rawScore) ? rawScore : 0;
   const colorToken = scoreColorToken(score);
   const colorHex = scoreColorHex(score);
   const cc = COLOR_CLASSES[colorToken];
-  const roleMeta = getRoleMeta(analysis.target_role);
+  const roleMeta = getRoleMeta(analysis.target_role || "Your Role");
   const RoleIcon = roleMeta.icon;
 
   const gaugeData = [{ name: "score", value: displayScore, fill: colorHex }];
@@ -670,11 +713,13 @@ export default function ResultsView() {
               {analysis.dimensions && analysis.dimensions.length > 0 && (
                 <StaggerGroup className="flex flex-col gap-4" stagger={0.07}>
                   {analysis.dimensions.map((dim: DimensionScore, idx: number) => {
+                    const rawScore = Number(dim.score);
+                    const score = Number.isFinite(rawScore) ? rawScore : 0;
                     const label = dimensionLabel(dim.name);
-                    const dimHex = scoreColorHex(dim.score);
-                    const dimToken = scoreColorToken(dim.score);
+                    const dimHex = scoreColorHex(score);
+                    const dimToken = scoreColorToken(score);
                     const dc = COLOR_CLASSES[dimToken];
-                    const clamped = Math.max(0, Math.min(100, dim.score));
+                    const clamped = Math.max(0, Math.min(100, score));
                     return (
                       <Reveal
                         key={`${dim.name}-${idx}`}
@@ -690,15 +735,15 @@ export default function ResultsView() {
                             <span
                               className={`text-sm font-semibold tabular-nums ${dc.text}`}
                             >
-                              {dim.score}
+                              {score}
                             </span>
                           </div>
                           <div
                             role="progressbar"
-                            aria-valuenow={dim.score}
+                            aria-valuenow={score}
                             aria-valuemin={0}
                             aria-valuemax={100}
-                            aria-label={`${label}: ${dim.score} out of 100`}
+                            aria-label={`${label}: ${score} out of 100`}
                             className="h-2.5 w-full overflow-hidden rounded-full bg-white/10"
                           >
                             <div

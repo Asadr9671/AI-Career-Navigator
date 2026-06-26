@@ -230,7 +230,7 @@ function CommunityView() {
           label: "Total Resumes Analyzed",
           icon: Users,
           accent: "violet",
-          value: stats.total_analyses.toLocaleString(),
+          value: String(stats.total_analyses),
         },
         {
           key: "avg",

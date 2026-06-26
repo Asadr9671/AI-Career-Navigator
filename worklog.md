@@ -461,3 +461,50 @@ Stage Summary:
 - The "same score for every resume" bug is FIXED. Scores now range from 21 to 92 based on actual resume content.
 - Every score comes with a 1-2 sentence justification + 5-dimension evidence breakdown, so users can see exactly WHY they got that score.
 - The gaps and strengths are also resume-specific (verified: weak resume gets "Linear algebra fundamentals" / "Python proficiency", strong resume gets "LLM fine-tuning" / "Advanced prompt engineering").
+
+---
+Task ID: 9 (hydration + runtime crash fixes)
+Agent: main
+Task: Fix the React hydration mismatch error and the ResultsView runtime crash ("Cannot read properties of undefined (reading 'length')" + PDF export "toLowerCase" failure). Make the entire website work perfectly.
+
+Root causes identified & fixed:
+
+1. **React hydration mismatch** (the user's screenshot error):
+   - **Footer** used `new Date().getFullYear()` directly in render — server and client can produce different values (timezone / New Year boundary). Fix: added `suppressHydrationWarning` to the `<p>` element containing the year (Next.js-recommended pattern for date/time content).
+   - **LandingView** directly imported `HeroScene3D` (the three.js `<Canvas>`) while the view itself was loaded with `ssr: true` in page.tsx. The server tried to render the Canvas (which needs `window`/`WebGL`), producing HTML that didn't match the client. Fix: changed LandingView to dynamically import HeroScene3D with `ssr: false` + `loading: () => null`.
+   - **CommunityView** used `toLocaleString()` for the total-analyses count (locale-dependent). Fix: replaced with `String(...)` for stable rendering.
+   - **Layout** added `suppressHydrationWarning` to `<body>` as a safety net.
+
+2. **ResultsView runtime crash** ("Cannot read properties of undefined (reading 'length')" at `analysis.gaps.length`):
+   - The `currentAnalysis` object from the store could have undefined `gaps`/`strengths`/`roadmap`/`dimensions`/`target_role`/`score` fields (e.g. when navigating back from Roadmap after a store reset, or with older analyses).
+   - Fix: added a `useMemo` normalization layer that guarantees all fields have safe defaults:
+     - `gaps`, `strengths`, `roadmap` → always arrays (default `[]`)
+     - `dimensions` → array or undefined
+     - `target_role` → string (default "Your Role")
+     - `score` → number (default 0)
+     - `score_label` → string (default "`{score}% ready`")
+     - `score_justification` → string or undefined
+
+3. **PDF export crash** ("Cannot read properties of undefined (reading 'toLowerCase')"):
+   - `slugify(analysis.target_role)` failed when `target_role` was undefined.
+   - Fix: made `slugify` accept `string | undefined | null` and return `"role"` fallback.
+   - Also added defensive local variables at the top of `exportPDF` (`role`, `gaps`, `strengths`, `roadmap`, `justification`, `dimensions`) so the function never crashes on a malformed analysis.
+
+4. **NaN React warning** in dimension bars:
+   - `dim.score` could be NaN if the AI returned a non-numeric value.
+   - Fix: added `const rawScore = Number(dim.score); const score = Number.isFinite(rawScore) ? rawScore : 0;` guard in the dimension rendering and the gauge animation.
+
+End-to-end verification (Agent Browser, desktop 1440×900):
+- [✓] Initial page load: NO hydration errors in console (was showing the red hydration mismatch overlay before).
+- [✓] Landing → Upload → Analyze (Software Development): results load with score gauge, "Why this score?" card, gaps + strengths pills.
+- [✓] Results → Roadmap → Back to Results: NO crash (was showing "Cannot read properties of undefined" error overlay before). All sections render.
+- [✓] PDF export: downloads as `career-roadmap-software-development-2026-06-26.pdf` (6902 bytes, was failing with "toLowerCase" error before).
+- [✓] Community: 4 stat cards (22 analyses, avg 72.4/100, top role Software Development, most common gap "Performance optimization at scale"), trending bar chart with colored bars, ranked skills table.
+- [✓] Console: NO hydration errors, NO runtime errors, NO NaN warnings.
+- [✓] `bun run lint` clean.
+
+Stage Summary:
+- The hydration mismatch error is FIXED (Footer year + LandingView 3D Canvas ssr:false + layout suppressHydrationWarning).
+- The ResultsView runtime crash is FIXED (defensive normalization of the analysis object).
+- The PDF export crash is FIXED (slugify + exportPDF defensive guards).
+- The entire website now works perfectly end-to-end with zero console errors.

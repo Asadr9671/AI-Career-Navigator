@@ -29,9 +29,18 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Reveal, StaggerGroup } from "@/components/motion-helpers";
-import HeroScene3D from "@/components/hero-scene-3d";
+import dynamic from "next/dynamic";
 import { ROLE_LIST } from "@/lib/role-meta";
 import { useNavigator } from "@/lib/navigator-store";
+
+// The 3D hero scene uses three.js / WebGL which requires `window`. It MUST be
+// loaded client-only (ssr: false) — otherwise the server tries to render the
+// <Canvas> and produces HTML that doesn't match the client, causing a React
+// hydration mismatch error.
+const HeroScene3D = dynamic(() => import("@/components/hero-scene-3d").then((m) => m.default), {
+  ssr: false,
+  loading: () => null, // the hero has its own gradient bg; no loader needed
+});
 
 /** Literal class strings per role color token (Tailwind JIT needs full names). */
 const ROLE_HOVER_CLASS: Record<string, string> = {
