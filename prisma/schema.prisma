@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Resume analysis results — JSON fields are stored as text (SQLite limitation)
+model Analysis {
+  id              String   @id @default(cuid())
+  targetRole      String
+  readinessScore  Int
+  scoreLabel      String
+  gaps            String // JSON-stringified string[]
+  strengths       String // JSON-stringified string[]
+  roadmap         String // JSON-stringified RoadmapWeek[]
+  createdAt       DateTime @default(now())
+
+  @@index([targetRole])
+  @@index([createdAt])
+}
+
+// Anonymized skill trend tracking (no PII)
+model SkillTrend {
+  id          String   @id @default(cuid())
+  targetRole  String
+  skillName   String
+  frequency   Int      @default(1)
+  lastSeen    DateTime @default(now())
+
+  @@unique([targetRole, skillName])
+  @@index([targetRole])
+  @@index([frequency])
+}

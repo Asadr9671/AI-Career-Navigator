@@ -1,0 +1,892 @@
+     1→     1→# AI Career Navigator — Master Prompt File
+     2→     2→### Independent Project | One-Day Build Sprint
+     3→     3→### Author: Shadow | Stack: React + FastAPI + Gemini + Supabase (All Free)
+     4→     4→
+     5→     5→---
+     6→     6→
+     7→     7→> **How to use this file:**
+     8→     8→> Work through the prompts in order — top to bottom — in a single day.
+     9→     9→> Each prompt is fully self-contained. Paste it into Claude, Cursor, Windsurf,
+    10→    10→> or Bolt.new exactly as written. The entire project will be live by end of day.
+    11→    11→> Estimated total build time: 8–10 hours.
+    12→    12→
+    13→    13→---
+    14→    14→
+    15→    15→## MASTER SYSTEM CONTEXT
+    16→    16→> **Required.** Paste this block at the top of EVERY new AI coding session
+    17→    17→> before running any prompt below. It keeps all tools aligned on the same project.
+    18→    18→
+    19→    19→```
+    20→    20→You are a senior full-stack AI engineer building "AI Career Navigator" —
+    21→    21→an independent web application that analyzes a user's uploaded resume,
+    22→    22→identifies skill gaps for their chosen career path, generates a personalized
+    23→    23→week-by-week learning roadmap, shows a job readiness score, and includes a
+    24→    24→community dashboard showing trending skills across all users.
+    25→    25→
+    26→    26→TECH STACK (100% free tier, no credit card required):
+    27→    27→  Frontend   : React 18 + Vite + Tailwind CSS + shadcn/ui → Vercel (free)
+    28→    28→  Backend    : FastAPI (Python 3.11) → Render.com (free tier)
+    29→    29→  AI Engine  : Google Gemini 1.5 Flash via google-generativeai → Google AI Studio (free)
+    30→    30→  Database   : Supabase PostgreSQL → Supabase free tier (500MB)
+    31→    31→  Auth       : Supabase Auth (built-in, free)
+    32→    32→  PDF Parse  : PyMuPDF (fitz) — server-side, open source
+    33→    33→  PDF Export : pdf-lib — browser-side JavaScript, zero server cost
+    34→    34→
+    35→    35→PROJECT FOLDER STRUCTURE:
+    36→    36→  /career-navigator-frontend     React + Vite app
+    37→    37→  /career-navigator-backend      FastAPI app
+    38→    38→    main.py                      App entry, CORS, router registration
+    39→    39→    routers/
+    40→    40→      analyze.py                 Resume upload and AI analysis endpoint
+    41→    41→      community.py               Public trending skills endpoints
+    42→    42→    services/
+    43→    43→      gemini_service.py          Gemini API calls and prompt logic
+    44→    44→      resume_parser.py           PDF text extraction with PyMuPDF
+    45→    45→    models/
+    46→    46→      schemas.py                 Pydantic request/response models
+    47→    47→    database.py                  Supabase client initialization
+    48→    48→
+    49→    49→CODING RULES — follow these in every file generated:
+    50→    50→  1. Zero paid services. Every library, API, and platform must have a free tier.
+    51→    51→  2. All secrets via environment variables. Never hardcode keys.
+    52→    52→  3. Async/await throughout FastAPI. No synchronous blocking calls.
+    53→    53→  4. Functional React components with hooks only. No class components.
+    54→    54→  5. All API responses follow { data, error, message } envelope structure.
+    55→    55→  6. Input validation on every endpoint (file type, size, role whitelist).
+    56→    56→  7. Graceful error handling — never let an unhandled exception reach the user.
+    57→    57→  8. TypeScript is NOT used — plain JavaScript only on the frontend.
+    58→    58→  9. Tailwind CSS for all styling. No custom CSS files.
+    59→    59→  10. Each file must be complete and immediately runnable — no placeholders.
+    60→    60→```
+    61→    61→
+    62→    62→---
+    63→    63→
+    64→    64→## HOUR 1 — PROJECT SETUP
+    65→    65→> **Goal:** Both repos initialized, dependencies installed, env files configured,
+    66→    66→> Supabase schema live. Should take ~45 minutes.
+    67→    67→
+    68→    68→---
+    69→    69→
+    70→    70→### PROMPT 01 — SCAFFOLD BOTH REPOS
+    71→    71→
+    72→    72→```
+    73→    73→Using the master system context above, generate the following files
+    74→    74→to initialize the complete project. Output each as a labelled code block.
+    75→    75→No explanations between files — just the files.
+    76→    76→
+    77→    77→FILES TO GENERATE:
+    78→    78→
+    79→    79→1. /career-navigator-backend/requirements.txt
+    80→    80→   Packages: fastapi uvicorn[standard] python-multipart pymupdf
+    81→    81→   google-generativeai supabase python-dotenv pydantic[email]
+    82→    82→   python-jose[cryptography] passlib[bcrypt]
+    83→    83→
+    84→    84→2. /career-navigator-backend/.env.example
+    85→    85→   Variables:
+    86→    86→     GEMINI_API_KEY=your_gemini_api_key_here
+    87→    87→     SUPABASE_URL=https://your-project-ref.supabase.co
+    88→    88→     SUPABASE_ANON_KEY=your_supabase_anon_key
+    89→    89→     SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+    90→    90→     SECRET_KEY=any_long_random_string_here
+    91→    91→     FRONTEND_URL=http://localhost:5173
+    92→    92→
+    93→    93→3. /career-navigator-backend/main.py
+    94→    94→   - FastAPI app instance with title "AI Career Navigator API"
+    95→    95→   - CORSMiddleware: allow origins from env FRONTEND_URL + https://*.vercel.app,
+    96→    96→     allow_methods=["*"], allow_headers=["*"], allow_credentials=True
+    97→    97→   - Include routers: analyze (prefix /analyze), community (prefix /community)
+    98→    98→   - GET / → returns {"status": "ok", "app": "AI Career Navigator", "version": "1.0"}
+    99→    99→
+   100→   100→4. /career-navigator-backend/database.py
+   101→   101→   - Loads SUPABASE_URL and SUPABASE_ANON_KEY from env using python-dotenv
+   102→   102→   - Creates and exports: supabase_client (anon key, for user-facing ops)
+   103→   103→   - Creates and exports: supabase_admin (service key, for server-side inserts)
+   104→   104→
+   105→   105→5. /career-navigator-frontend/package.json
+   106→   106→   Dependencies: react react-dom react-router-dom axios recharts
+   107→   107→   react-dropzone pdf-lib lucide-react clsx tailwind-merge
+   108→   108→   devDependencies: vite @vitejs/plugin-react tailwindcss postcss autoprefixer
+   109→   109→
+   110→   110→6. /career-navigator-frontend/vite.config.js
+   111→   111→   Standard Vite + React config with proxy:
+   112→   112→   /api → http://localhost:8000 (so frontend can call /api/analyze during dev)
+   113→   113→
+   114→   114→7. /career-navigator-frontend/src/main.jsx
+   115→   115→   React 18 createRoot with BrowserRouter wrapping App
+   116→   116→
+   117→   117→8. /career-navigator-frontend/src/App.jsx
+   118→   118→   Routes:
+   119→   119→     /           → LandingPage
+   120→   120→     /analyze    → UploadPage
+   121→   121→     /results/:id → ResultsPage
+   122→   122→     /roadmap/:id → RoadmapPage
+   123→   123→     /community  → CommunityPage
+   124→   124→   Persistent Navbar at top with links: Home | Analyze Resume | Community
+   125→   125→   Use react-router-dom NavLink with active styling.
+   126→   126→
+   127→   127→9. /career-navigator-frontend/.env.example
+   128→   128→   VITE_API_URL=http://localhost:8000
+   129→   129→   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   130→   130→   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   131→   131→```
+   132→   132→
+   133→   133→---
+   134→   134→
+   135→   135→### PROMPT 02 — SUPABASE DATABASE SCHEMA
+   136→   136→> **Run this entire block in:** supabase.com → your project → SQL Editor → New Query → Run
+   137→   137→
+   138→   138→```sql
+   139→   139→-- ============================================================
+   140→   140→-- AI Career Navigator — Supabase Database Schema
+   141→   141→-- Run this full block once in the Supabase SQL Editor
+   142→   142→-- ============================================================
+   143→   143→
+   144→   144→CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+   145→   145→
+   146→   146→-- User profiles (auto-created on signup via trigger below)
+   147→   147→CREATE TABLE public.profiles (
+   148→   148→  id          UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+   149→   149→  full_name   TEXT,
+   150→   150→  email       TEXT UNIQUE NOT NULL,
+   151→   151→  created_at  TIMESTAMPTZ DEFAULT NOW()
+   152→   152→);
+   153→   153→
+   154→   154→-- Resume analysis results
+   155→   155→CREATE TABLE public.analyses (
+   156→   156→  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+   157→   157→  user_id          UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+   158→   158→  target_role      TEXT NOT NULL,
+   159→   159→  readiness_score  INTEGER CHECK (readiness_score BETWEEN 0 AND 100),
+   160→   160→  score_label      TEXT,
+   161→   161→  gaps             JSONB DEFAULT '[]',
+   162→   162→  strengths        JSONB DEFAULT '[]',
+   163→   163→  roadmap          JSONB DEFAULT '[]',
+   164→   164→  created_at       TIMESTAMPTZ DEFAULT NOW()
+   165→   165→);
+   166→   166→
+   167→   167→-- Anonymized skill trend tracking (no PII)
+   168→   168→CREATE TABLE public.skill_trends (
+   169→   169→  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+   170→   170→  target_role  TEXT NOT NULL,
+   171→   171→  skill_name   TEXT NOT NULL,
+   172→   172→  frequency    INTEGER DEFAULT 1,
+   173→   173→  last_seen    TIMESTAMPTZ DEFAULT NOW(),
+   174→   174→  UNIQUE (target_role, skill_name)
+   175→   175→);
+   176→   176→
+   177→   177→-- Row-level security
+   178→   178→ALTER TABLE public.profiles     ENABLE ROW LEVEL SECURITY;
+   179→   179→ALTER TABLE public.analyses     ENABLE ROW LEVEL SECURITY;
+   180→   180→ALTER TABLE public.skill_trends ENABLE ROW LEVEL SECURITY;
+   181→   181→
+   182→   182→-- Policies
+   183→   183→CREATE POLICY "Own profile readable"
+   184→   184→  ON public.profiles FOR SELECT USING (auth.uid() = id);
+   185→   185→
+   186→   186→CREATE POLICY "Own analyses readable"
+   187→   187→  ON public.analyses FOR SELECT USING (auth.uid() = user_id);
+   188→   188→
+   189→   189→CREATE POLICY "Own analyses insertable"
+   190→   190→  ON public.analyses FOR INSERT WITH CHECK (auth.uid() = user_id);
+   191→   191→
+   192→   192→CREATE POLICY "Skill trends public read"
+   193→   193→  ON public.skill_trends FOR SELECT USING (true);
+   194→   194→
+   195→   195→-- Auto-create profile on Supabase Auth signup
+   196→   196→CREATE OR REPLACE FUNCTION public.handle_new_user()
+   197→   197→RETURNS TRIGGER AS $$
+   198→   198→BEGIN
+   199→   199→  INSERT INTO public.profiles (id, email, full_name)
+   200→   200→  VALUES (
+   201→   201→    NEW.id,
+   202→   202→    NEW.email,
+   203→   203→    COALESCE(NEW.raw_user_meta_data->>'full_name', 'Anonymous')
+   204→   204→  );
+   205→   205→  RETURN NEW;
+   206→   206→END;
+   207→   207→$$ LANGUAGE plpgsql SECURITY DEFINER;
+   208→   208→
+   209→   209→CREATE OR REPLACE TRIGGER on_auth_user_created
+   210→   210→  AFTER INSERT ON auth.users
+   211→   211→  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+   212→   212→```
+   213→   213→
+   214→   214→---
+   215→   215→
+   216→   216→## HOUR 2–3 — BACKEND CORE
+   217→   217→> **Goal:** Working FastAPI server with resume parsing and Gemini AI analysis.
+   218→   218→> Test with Postman or curl before moving to frontend.
+   219→   219→
+   220→   220→---
+   221→   221→
+   222→   222→### PROMPT 03 — GEMINI AI SERVICE
+   223→   223→> This is the most important file in the entire project.
+   224→   224→> The quality of the AI output depends entirely on this prompt engineering.
+   225→   225→
+   226→   226→```
+   227→   227→Using the master system context, generate the complete file:
+   228→   228→/career-navigator-backend/services/gemini_service.py
+   229→   229→
+   230→   230→REQUIREMENTS:
+   231→   231→
+   232→   232→The file must contain one async function:
+   233→   233→  analyze_resume(resume_text: str, target_role: str) -> dict
+   234→   234→
+   235→   235→GEMINI SETUP:
+   236→   236→- Load GEMINI_API_KEY from environment using python-dotenv
+   237→   237→- Model: gemini-1.5-flash
+   238→   238→- generation_config:
+   239→   239→    temperature: 0.2  (low = consistent structured output)
+   240→   240→    max_output_tokens: 3000
+   241→   241→    response_mime_type: "application/json"  (forces clean JSON response)
+   242→   242→
+   243→   243→THE EXACT PROMPT TO SEND TO GEMINI (use this verbatim, only fill the placeholders):
+   244→   244→---
+   245→   245→You are an expert technical recruiter and career coach with 15 years of experience
+   246→   246→evaluating software engineering and tech candidates for top companies.
+   247→   247→
+   248→   248→A candidate has submitted their resume and wants to become a: {target_role}
+   249→   249→
+   250→   250→RESUME CONTENT:
+   251→   251→{resume_text}
+   252→   252→
+   253→   253→Perform a rigorous, honest analysis across 4 tasks:
+   254→   254→
+   255→   255→TASK 1 — JOB READINESS SCORE (integer 0-100):
+   256→   256→Assess how ready this candidate is for a {target_role} role at a mid-to-large
+   257→   257→tech company today (2025). Be calibrated: 40 = significant gaps, 70 = competitive,
+   258→   258→90+ = exceptionally strong. Do not inflate scores.
+   259→   259→
+   260→   260→TASK 2 — SKILL GAP ANALYSIS:
+   261→   261→Identify the 5 to 8 most critical skills or knowledge areas that are ABSENT or
+   262→   262→clearly UNDERDEVELOPED in this resume relative to {target_role} requirements.
+   263→   263→Be specific: "Docker & container orchestration" beats "DevOps tools".
+   264→   264→
+   265→   265→TASK 3 — 12-WEEK LEARNING ROADMAP:
+   266→   266→Design a focused, sequential 12-week plan to close the most important gaps.
+   267→   267→For each week provide:
+   268→   268→  - topic: the exact skill or concept (specific, not vague)
+   269→   269→  - resource_title: the name of one free, publicly accessible resource
+   270→   270→    (prefer: YouTube channels, freeCodeCamp, official documentation,
+   271→   271→     Coursera audit, MIT OpenCourseWare, The Odin Project, fast.ai)
+   272→   272→  - resource_url: the actual URL (must start with https://, must be real)
+   273→   273→  - project: a concrete mini-project to build that week to demonstrate the skill
+   274→   274→    (specific enough that the candidate knows exactly what to build,
+   275→   275→     e.g. "Build a REST API with CRUD operations using FastAPI and SQLite,
+   276→   276→     deploy it to Render.com free tier")
+   277→   277→
+   278→   278→TASK 4 — STRENGTHS:
+   279→   279→List exactly 3 genuine, specific strengths visible in the resume.
+   280→   280→Avoid generic praise. Reference actual content from the resume.
+   281→   281→
+   282→   282→Return ONLY a valid JSON object with this exact structure. No preamble, no
+   283→   283→markdown fences, no explanation — pure JSON only:
+   284→   284→{
+   285→   285→  "score": 74,
+   286→   286→  "score_label": "74% ready for {target_role}",
+   287→   287→  "gaps": [
+   288→   288→    "Skill gap one",
+   289→   289→    "Skill gap two"
+   290→   290→  ],
+   291→   291→  "strengths": [
+   292→   292→    "Specific strength one",
+   293→   293→    "Specific strength two",
+   294→   294→    "Specific strength three"
+   295→   295→  ],
+   296→   296→  "roadmap": [
+   297→   297→    {
+   298→   298→      "week": 1,
+   299→   299→      "topic": "Topic name",
+   300→   300→      "resource_title": "Name of free resource",
+   301→   301→      "resource_url": "https://real-url.com",
+   302→   302→      "project": "Specific mini-project description"
+   303→   303→    }
+   304→   304→  ]
+   305→   305→}
+   306→   306→---
+   307→   307→
+   308→   308→POST-RESPONSE VALIDATION:
+   309→   309→After receiving the Gemini response, validate:
+   310→   310→  - score is an integer between 0 and 100
+   311→   311→  - gaps is a list with 5–8 string items
+   312→   312→  - strengths is a list with exactly 3 string items
+   313→   313→  - roadmap is a list with exactly 12 objects
+   314→   314→  - each roadmap object has all 5 required keys
+   315→   315→  - each resource_url starts with "https://"
+   316→   316→
+   317→   317→RETRY LOGIC:
+   318→   318→If validation fails or JSON parsing fails, retry once with this appended to the prompt:
+   319→   319→"IMPORTANT: Your previous response failed JSON validation. Return ONLY the raw JSON
+   320→   320→object. No markdown, no code fences, no explanation text whatsoever."
+   321→   321→
+   322→   322→ERROR RETURNS:
+   323→   323→On quota exceeded: return {"error": True, "message": "API quota exceeded. Try again in a minute."}
+   324→   324→On all other failures: return {"error": True, "message": "Analysis failed: <exception message>"}
+   325→   325→
+   326→   326→Include all imports. Use load_dotenv() at the top of the file.
+   327→   327→```
+   328→   328→
+   329→   329→---
+   330→   330→
+   331→   331→### PROMPT 04 — RESUME PARSER SERVICE
+   332→   332→
+   333→   333→```
+   334→   334→Using the master system context, generate the complete file:
+   335→   335→/career-navigator-backend/services/resume_parser.py
+   336→   336→
+   337→   337→REQUIREMENTS:
+   338→   338→
+   339→   339→1. extract_text_from_pdf(file_bytes: bytes) -> str
+   340→   340→   - Uses PyMuPDF: import fitz
+   341→   341→   - Opens PDF from bytes stream (not file path)
+   342→   342→   - Extracts text from every page, joins with newline
+   343→   343→   - Strips repeated whitespace and blank lines
+   344→   344→   - Returns cleaned string
+   345→   345→
+   346→   346→2. validate_resume(text: str) -> tuple[bool, str]
+   347→   347→   Returns (is_valid: bool, message: str)
+   348→   348→   - (False, "PDF appears to be empty or image-only. Please upload a text-based PDF.")
+   349→   349→     if len(text.strip()) < 150
+   350→   350→   - (True, "truncated") if text > 8000 chars — silently truncate to 8000
+   351→   351→   - (False, "Resume text too short to analyze.") if 150 <= len < 300
+   352→   352→   - (True, "") for all valid cases
+   353→   353→
+   354→   354→3. is_resume(text: str) -> bool
+   355→   355→   Returns True if at least 3 of these words appear (case-insensitive):
+   356→   356→   experience, education, skills, project, university, degree, internship,
+   357→   357→   work, engineer, developer, bachelor, master, gpa, certificate, python,
+   358→   358→   javascript, software, data, cloud, devops
+   359→   359→
+   360→   360→All functions must have type hints and a one-line docstring.
+   361→   361→```
+   362→   362→
+   363→   363→---
+   364→   364→
+   365→   365→### PROMPT 05 — PYDANTIC SCHEMAS
+   366→   366→
+   367→   367→```
+   368→   368→Using the master system context, generate the complete file:
+   369→   369→/career-navigator-backend/models/schemas.py
+   370→   370→
+   371→   371→Define Pydantic v2 models for:
+   372→   372→
+   373→   373→1. RoadmapWeek
+   374→   374→   week: int
+   375→   375→   topic: str
+   376→   376→   resource_title: str
+   377→   377→   resource_url: str
+   378→   378→   project: str
+   379→   379→
+   380→   380→2. AnalysisResult
+   381→   381→   id: Optional[str] = None
+   382→   382→   target_role: str
+   383→   383→   score: int
+   384→   384→   score_label: str
+   385→   385→   gaps: list[str]
+   386→   386→   strengths: list[str]
+   387→   387→   roadmap: list[RoadmapWeek]
+   388→   388→   created_at: Optional[str] = None
+   389→   389→
+   390→   390→3. AnalysisRequest (for form data reference — not a request body, just docs)
+   391→   391→   file: description note (UploadFile, handled in router)
+   392→   392→   target_role: str — must be one of the 6 valid roles
+   393→   393→
+   394→   394→4. TrendingSkill
+   395→   395→   skill_name: str
+   396→   396→   target_role: str
+   397→   397→   frequency: int
+   398→   398→
+   399→   399→5. CommunityStats
+   400→   400→   total_analyses: int
+   401→   401→   average_score: float
+   402→   402→   top_role: str
+   403→   403→   most_common_gap: str
+   404→   404→
+   405→   405→VALID_ROLES constant (list of 6 strings):
+   406→   406→  "Software Development", "AI/ML Engineer", "DevOps Engineer",
+   407→   407→  "Data Science", "Full-Stack Developer", "Cloud Engineer"
+   408→   408→
+   409→   409→Export VALID_ROLES at the module level for use in routers.
+   410→   410→```
+   411→   411→
+   412→   412→---
+   413→   413→
+   414→   414→### PROMPT 06 — ANALYZE ROUTER
+   415→   415→
+   416→   416→```
+   417→   417→Using the master system context, generate the complete file:
+   418→   418→/career-navigator-backend/routers/analyze.py
+   419→   419→
+   420→   420→ENDPOINTS:
+   421→   421→
+   422→   422→POST /analyze/upload
+   423→   423→  Input: multipart/form-data
+   424→   424→    file: UploadFile  (PDF only, max 5MB)
+   425→   425→    target_role: str  (must be in VALID_ROLES)
+   426→   426→    user_id: Optional[str] = None
+   427→   427→  Process (in order):
+   428→   428→    1. Validate file content type is application/pdf; return HTTP 400 if not
+   429→   429→    2. Read file bytes; return HTTP 413 if > 5MB (5_242_880 bytes)
+   430→   430→    3. Call resume_parser.extract_text_from_pdf(bytes)
+   431→   431→    4. Call resume_parser.validate_resume(text); return HTTP 422 if invalid
+   432→   432→    5. Call resume_parser.is_resume(text); return HTTP 422 with message
+   433→   433→       "This does not appear to be a resume. Please upload your CV or resume."
+   434→   434→       if False
+   435→   435→    6. Call gemini_service.analyze_resume(text, target_role)
+   436→   436→    7. If result contains "error" key: return HTTP 502 with the error message
+   437→   437→    8. If user_id is provided:
+   438→   438→         a. Insert row into analyses table via supabase_admin
+   439→   439→         b. For each gap in result["gaps"], upsert into skill_trends:
+   440→   440→            on conflict (target_role, skill_name) increment frequency by 1
+   441→   441→         c. Add the saved analysis id to the result dict
+   442→   442→    9. Return result with HTTP 200
+   443→   443→
+   444→   444→GET /analyze/result/{analysis_id}
+   445→   445→  Fetch from analyses table by id using supabase_admin
+   446→   446→  Return 404 if not found, else return the full row as AnalysisResult
+   447→   447→
+   448→   448→GET /analyze/history/{user_id}
+   449→   449→  Return last 10 analyses for user_id, ordered by created_at DESC
+   450→   450→  Only return: id, target_role, readiness_score, score_label, created_at
+   451→   451→
+   452→   452→Include all imports. Import VALID_ROLES from models.schemas.
+   453→   453→Use supabase_admin from database.py for all DB operations.
+   454→   454→```
+   455→   455→
+   456→   456→---
+   457→   457→
+   458→   458→### PROMPT 07 — COMMUNITY ROUTER
+   459→   459→
+   460→   460→```
+   461→   461→Using the master system context, generate the complete file:
+   462→   462→/career-navigator-backend/routers/community.py
+   463→   463→
+   464→   464→ENDPOINTS:
+   465→   465→
+   466→   466→GET /community/trending
+   467→   467→  Query param: role: Optional[str] = None
+   468→   468→  If role provided: filter skill_trends by target_role = role
+   469→   469→  Return top 15 rows ordered by frequency DESC
+   470→   470→  Response: list of TrendingSkill
+   471→   471→
+   472→   472→GET /community/stats
+   473→   473→  Query against analyses and skill_trends tables:
+   474→   474→    total_analyses  → COUNT(*) from analyses
+   475→   475→    average_score   → AVG(readiness_score) from analyses, rounded to 1 decimal
+   476→   476→    top_role        → target_role with highest COUNT in analyses
+   477→   477→    most_common_gap → skill_name with highest frequency in skill_trends
+   478→   478→  Return as CommunityStats
+   479→   479→  If tables are empty return sensible defaults (zeros, "N/A")
+   480→   480→
+   481→   481→All operations use supabase_admin (bypasses RLS for public aggregate reads).
+   482→   482→No authentication required on any community endpoint.
+   483→   483→```
+   484→   484→
+   485→   485→---
+   486→   486→
+   487→   487→## HOUR 4–5 — FRONTEND PAGES
+   488→   488→> **Goal:** All 5 pages built and wired to the backend API.
+   489→   489→
+   490→   490→---
+   491→   491→
+   492→   492→### PROMPT 08 — LANDING PAGE
+   493→   493→
+   494→   494→```
+   495→   495→Using the master system context, generate the complete file:
+   496→   496→/career-navigator-frontend/src/pages/LandingPage.jsx
+   497→   497→
+   498→   498→Build a clean, professional hero landing page with:
+   499→   499→
+   500→   500→1. HERO SECTION
+   501→   501→   - Headline: "Know Exactly What's Holding Back Your Career"
+   502→   502→   - Subheadline: "Upload your resume. Get an honest readiness score,
+   503→   503→     a precise skill gap analysis, and a free 12-week learning roadmap —
+   504→   504→     tailored to the role you want."
+   505→   505→   - CTA button: "Analyze My Resume →" → navigates to /analyze
+   506→   506→   - A small trust line below button:
+   507→   507→     "Free to use. No account required for instant results."
+   508→   508→
+   509→   509→2. HOW IT WORKS SECTION (3 steps, horizontal on desktop, vertical on mobile)
+   510→   510→   Step 1 — Upload: "Drop your PDF resume and select your target role"
+   511→   511→   Step 2 — Analyze: "Our AI scores your resume and finds your exact skill gaps"
+   512→   512→   Step 3 — Learn: "Get a week-by-week free roadmap to close every gap"
+   513→   513→   Use lucide-react icons: Upload, Cpu, BookOpen
+   514→   514→
+   515→   515→3. ROLES SECTION
+   516→   516→   "Works for 6 career paths" — show the 6 role cards in a 3x2 grid
+   517→   517→   with matching icons (Code, Brain, Server, BarChart, Layers, Cloud)
+   518→   518→   Cards are non-interactive, just visual.
+   519→   519→
+   520→   520→4. FOOTER
+   521→   521→   "AI Career Navigator — Built with Gemini AI · Open Source"
+   522→   522→
+   523→   523→Tailwind CSS only. Mobile-first responsive design.
+   524→   524→No external images or assets. Icons from lucide-react only.
+   525→   525→```
+   526→   526→
+   527→   527→---
+   528→   528→
+   529→   529→### PROMPT 09 — UPLOAD PAGE
+   530→   530→
+   531→   531→```
+   532→   532→Using the master system context, generate the complete file:
+   533→   533→/career-navigator-frontend/src/pages/UploadPage.jsx
+   534→   534→
+   535→   535→This is the core user interaction page. Build it with:
+   536→   536→
+   537→   537→1. PDF DRAG-AND-DROP UPLOADER (using react-dropzone)
+   538→   538→   Visual states:
+   539→   539→     idle:         Dashed border, "Drag your resume here or click to browse"
+   540→   540→                   + "PDF files only · Max 5MB" in smaller text below
+   541→   541→     drag-over:    Solid accent border, blue-tinted background, "Drop it!"
+   542→   542→     file-selected: Shows filename, file size, green checkmark icon
+   543→   543→                   + a small "Remove" link to clear selection
+   544→   544→   Validation (client-side before submit):
+   545→   545→     - Reject non-PDF by checking file.type === "application/pdf"
+   546→   546→     - Reject files > 5MB
+   547→   547→     - Show inline error message for both cases
+   548→   548→
+   549→   549→2. ROLE SELECTOR — 6 clickable cards in a 2-column grid
+   550→   550→   Each card: icon (top) + role name (bottom)
+   551→   551→   Roles: Software Development (Code), AI/ML Engineer (Brain),
+   552→   552→          DevOps Engineer (Server), Data Science (BarChart),
+   553→   553→          Full-Stack Developer (Layers), Cloud Engineer (Cloud)
+   554→   554→   Selected state: accent-colored border, lightly tinted background
+   555→   555→
+   556→   556→3. ANALYZE BUTTON
+   557→   557→   - Disabled and gray when file or role not selected
+   558→   558→   - Active and accent-colored when both are selected
+   559→   559→   - During API call: shows spinner + "Analyzing your resume..." text, disabled
+   560→   560→   - Full width on mobile, auto width centered on desktop
+   561→   561→
+   562→   562→4. API CALL on submit:
+   563→   563→   POST to ${import.meta.env.VITE_API_URL}/analyze/upload
+   564→   564→   FormData with: file (the PDF), target_role (selected role)
+   565→   565→   On success (200): navigate to /results/${response.data.id}
+   566→   566→                     passing full response.data as router state
+   567→   567→   On error: show inline error banner with the API error message
+   568→   568→
+   569→   569→5. LAYOUT: single column, max-width 600px, centered, generous padding
+   570→   570→   Section headings: "Step 1 — Upload Your Resume" and "Step 2 — Select Your Target Role"
+   571→   571→```
+   572→   572→
+   573→   573→---
+   574→   574→
+   575→   575→### PROMPT 10 — RESULTS DASHBOARD PAGE
+   576→   576→
+   577→   577→```
+   578→   578→Using the master system context, generate the complete file:
+   579→   579→/career-navigator-frontend/src/pages/ResultsPage.jsx
+   580→   580→
+   581→   581→Data source: useLocation().state contains the full analysis object.
+   582→   582→If state is null, fetch from GET /analyze/result/:id using useParams().
+   583→   583→
+   584→   584→BUILD THESE SECTIONS IN ORDER:
+   585→   585→
+   586→   586→1. SCORE HEADER CARD
+   587→   587→   - Large centered circular gauge using recharts RadialBarChart
+   588→   588→     (single bar, fill based on score: red <40, amber 40-70, green >70)
+   589→   589→   - Score number large (e.g. "74") inside the gauge center
+   590→   590→   - Score label below: "74% Ready for Software Development"
+   591→   591→   - Animate the bar from 0 to score on mount (use startAngle/endAngle animation)
+   592→   592→
+   593→   593→2. SKILL GAPS CARD
+   594→   594→   Heading: "Skills to Develop" with AlertCircle icon
+   595→   595→   Each gap as a rounded pill badge: red background, red text, × icon on right
+   596→   596→   Caption below pills: "Closing these gaps will most impact your readiness score."
+   597→   597→
+   598→   598→3. STRENGTHS CARD
+   599→   599→   Heading: "Your Strengths" with CheckCircle icon
+   600→   600→   Each strength as a rounded pill badge: green background, green text, ✓ icon
+   601→   601→   Caption: "Leverage these in interviews and on your resume."
+   602→   602→
+   603→   603→4. ACTION ROW (3 buttons, horizontal on desktop, stacked on mobile)
+   604→   604→   [View Full Roadmap →]    → navigate to /roadmap/:id with state
+   605→   605→   [Export PDF Report]      → calls handleExportPDF() (see below)
+   606→   606→   [Analyze Another Resume] → navigate to /analyze
+   607→   607→
+   608→   608→5. PDF EXPORT using pdf-lib (fully browser-side, no backend call):
+   609→   609→   async function handleExportPDF(analysisData):
+   610→   610→     Page 1 — Cover:
+   611→   611→       Title: "AI Career Navigator Report"
+   612→   612→       Date: today's date
+   613→   613→       Role: target_role
+   614→   614→       Readiness Score: score + score_label
+   615→   615→       Gaps listed with bullet points
+   616→   616→       Strengths listed with bullet points
+   617→   617→     Pages 2-4 — Roadmap (3 weeks per page):
+   618→   618→       Each week block: Week N header, Topic, Resource (title + URL), Project
+   619→   619→     Save as: "career-roadmap-{role}-{YYYY-MM-DD}.pdf"
+   620→   620→     Trigger browser download immediately
+   621→   621→
+   622→   622→Use shadcn/ui-style Tailwind card styling (white bg, rounded-xl, shadow-sm, border).
+   623→   623→Show a skeleton loader while fetching (if fetching by ID).
+   624→   624→All sections animate in with a staggered fade-up on mount.
+   625→   625→```
+   626→   626→
+   627→   627→---
+   628→   628→
+   629→   629→### PROMPT 11 — ROADMAP PAGE
+   630→   630→
+   631→   631→```
+   632→   632→Using the master system context, generate the complete file:
+   633→   633→/career-navigator-frontend/src/pages/RoadmapPage.jsx
+   634→   634→
+   635→   635→Data: from useLocation().state or fetch by ID if state is null.
+   636→   636→
+   637→   637→FEATURES:
+   638→   638→
+   639→   639→1. HEADER
+   640→   640→   - Title: "Your 12-Week Learning Roadmap"
+   641→   641→   - Role badge: target_role
+   642→   642→   - Progress bar: "X of 12 weeks complete" (X = checked weeks count)
+   643→   643→   - Progress persisted in localStorage with key: "roadmap-progress-{analysisId}"
+   644→   644→
+   645→   645→2. FILTER TABS (above the cards row)
+   646→   646→   [All] [Remaining] [Completed]
+   647→   647→   Filters the visible week cards accordingly.
+   648→   648→
+   649→   649→3. WEEK CARDS (12 total, 2-column grid on desktop, 1-column mobile)
+   650→   650→   Each card contains:
+   651→   651→     - Top-left: "Week N" badge
+   652→   652→       Color group: weeks 1-4 = blue, 5-8 = amber, 9-12 = green
+   653→   653→     - Topic: bold heading
+   654→   654→     - Resource row: BookOpen icon + clickable link (resource_title, opens new tab)
+   655→   655→     - Project row: Wrench icon + project description text
+   656→   656→     - Bottom: checkbox "Mark as complete" — updates progress state
+   657→   657→   Completed card appearance: green left border, subtle green background tint,
+   658→   658→   CheckCircle icon top-right, slightly reduced opacity on content
+   659→   659→
+   660→   660→4. COMPLETION BANNER (shown when all 12 complete)
+   661→   661→   Full-width card with trophy icon:
+   662→   662→   "Roadmap Complete! You've put in the work — time to update your resume and apply."
+   663→   663→   Button: "Analyze Again →" → /analyze
+   664→   664→
+   665→   665→5. BACK LINK at top-left: "← Back to Results" → /results/:id
+   666→   666→
+   667→   667→No external API calls on this page — all data from state or the already-fetched result.
+   668→   668→```
+   669→   669→
+   670→   670→---
+   671→   671→
+   672→   672→### PROMPT 12 — COMMUNITY PAGE
+   673→   673→
+   674→   674→```
+   675→   675→Using the master system context, generate the complete file:
+   676→   676→/career-navigator-frontend/src/pages/CommunityPage.jsx
+   677→   677→
+   678→   678→This page shows anonymized learning trends across all users.
+   679→   679→Fetch data on mount from:
+   680→   680→  GET /community/stats    → CommunityStats object
+   681→   681→  GET /community/trending → list of TrendingSkill objects
+   682→   682→
+   683→   683→SECTIONS:
+   684→   684→
+   685→   685→1. STATS ROW — 4 metric cards in a grid
+   686→   686→   - Total Resumes Analyzed  (Users icon)
+   687→   687→   - Average Readiness Score (TrendingUp icon)
+   688→   688→   - Most Popular Role       (Star icon)
+   689→   689→   - Most Common Skill Gap   (AlertTriangle icon)
+   690→   690→   Show skeleton loaders while fetching.
+   691→   691→
+   692→   692→2. TRENDING SKILLS CHART
+   693→   693→   - Heading: "Top Skills People Are Working On"
+   694→   694→   - Role filter dropdown above chart (All Roles + the 6 specific roles)
+   695→   695→   - Horizontal recharts BarChart
+   696→   696→     Y-axis: skill_name, X-axis: frequency count
+   697→   697→     Bar fill color varies by role (assign each role a fixed Tailwind color)
+   698→   698→   - Chart height: 420px, responsive container width 100%
+   699→   699→   - Custom tooltip showing: skill name, role, count
+   700→   700→
+   701→   701→3. RANKED SKILLS LIST (below chart, same filtered data)
+   702→   702→   Table with columns: # | Skill | Role | Count
+   703→   703→   Show 10 rows, "Load More" button appends next 10
+   704→   704→   Role shown as a colored badge matching the chart color
+   705→   705→
+   706→   706→4. DISCLAIMER FOOTER
+   707→   707→   Small muted text: "All insights are anonymized. No personal data is displayed."
+   708→   708→
+   709→   709→Implement loading state (skeleton), error state (retry button), and empty state
+   710→   710→("No data yet — be the first to analyze your resume!").
+   711→   711→```
+   712→   712→
+   713→   713→---
+   714→   714→
+   715→   715→## HOUR 6 — DEPLOYMENT
+   716→   716→> **Goal:** Both services live with public URLs. Should take ~45 minutes.
+   717→   717→
+   718→   718→---
+   719→   719→
+   720→   720→### PROMPT 13 — DEPLOYMENT CONFIG FILES
+   721→   721→
+   722→   722→```
+   723→   723→Using the master system context, generate all deployment and config files.
+   724→   724→Output each as a labelled code block, no explanations between them.
+   725→   725→
+   726→   726→1. /career-navigator-backend/render.yaml
+   727→   727→   Web service, Python 3.11, build: pip install -r requirements.txt,
+   728→   728→   start: uvicorn main:app --host 0.0.0.0 --port $PORT
+   729→   729→   Set envVars section with placeholders for all 5 env variables.
+   730→   730→
+   731→   731→2. /career-navigator-frontend/vercel.json
+   732→   732→   SPA rewrite: all routes → /index.html
+   733→   733→   Build: npm run build, output: dist
+   734→   734→   No serverless functions needed.
+   735→   735→
+   736→   736→3. /career-navigator-backend/Dockerfile
+   737→   737→   Python 3.11-slim, WORKDIR /app, copy requirements, install, copy app,
+   738→   738→   EXPOSE 8000, CMD uvicorn main:app --host 0.0.0.0 --port 8000
+   739→   739→
+   740→   740→4. /.gitignore (root level, covers both sub-projects)
+   741→   741→   Cover: .env, __pycache__, node_modules, dist, .venv, venv,
+   742→   742→   *.pyc, .DS_Store, *.egg-info
+   743→   743→
+   744→   744→5. /README.md
+   745→   745→   Sections: Overview (3 sentences), Live Demo (placeholder URL),
+   746→   746→   Tech Stack (table), Local Setup (step-by-step for both frontend and backend),
+   747→   747→   Environment Variables (table with name + description for all variables),
+   748→   748→   Deploy (Vercel + Render.com steps), Free Tier Limits (what to watch for),
+   749→   749→   License: MIT
+   750→   750→```
+   751→   751→
+   752→   752→---
+   753→   753→
+   754→   754→## HOUR 7 — TESTING & BUG FIXES
+   755→   755→
+   756→   756→---
+   757→   757→
+   758→   758→### PROMPT 14 — BACKEND TEST SCRIPT
+   759→   759→
+   760→   760→```
+   761→   761→Using the master system context, generate /career-navigator-backend/test_api.py
+   762→   762→
+   763→   763→A zero-dependency test script runnable with: python test_api.py
+   764→   764→Uses only httpx and standard library. No pytest.
+   765→   765→
+   766→   766→TEST SUITE:
+   767→   767→
+   768→   768→T01: Health check — GET / → 200, body contains "status": "ok"
+   769→   769→T02: Invalid file type — POST /analyze/upload with a .txt file → 400
+   770→   770→T03: File too large — POST /analyze/upload with 6MB fake bytes → 413
+   771→   771→T04: Missing role — POST /analyze/upload with valid PDF but no target_role → 422
+   772→   772→T05: Valid analysis — POST /analyze/upload with a generated minimal PDF
+   773→   773→     (generate inline using fpdf2 or write raw PDF bytes — no external file needed)
+   774→   774→     target_role = "Software Development"
+   775→   775→     Assert: 200, response has keys score/gaps/strengths/roadmap
+   776→   776→     Assert: 0 <= score <= 100
+   777→   777→     Assert: len(roadmap) == 12
+   778→   778→     Assert: all roadmap items have week/topic/resource_title/resource_url/project
+   779→   779→     Assert: each resource_url starts with "https://"
+   780→   780→T06: Community stats — GET /community/stats → 200, has all 4 expected keys
+   781→   781→T07: Community trending — GET /community/trending → 200, returns a list
+   782→   782→
+   783→   783→For each test: print "✓ PASS T0X — <name> (<Nms>)" or "✗ FAIL T0X — <name>: <error>"
+   784→   784→Print summary at end: "X/7 tests passed"
+   785→   785→BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
+   786→   786→```
+   787→   787→
+   788→   788→---
+   789→   789→
+   790→   790→## QUICK-FIX PROMPTS
+   791→   791→> Keep these ready. Copy-paste the relevant one when you hit a specific issue.
+   792→   792→
+   793→   793→---
+   794→   794→
+   795→   795→### FIX-01 — CORS error in browser console
+   796→   796→```
+   797→   797→My React app at localhost:5173 is getting a CORS error when calling FastAPI
+   798→   798→at localhost:8000. The error is: [paste error here]
+   799→   799→Fix the CORSMiddleware in main.py. Ensure allow_origins includes both
+   800→   800→http://localhost:5173 and https://*.vercel.app, allow_credentials=True,
+   801→   801→allow_methods=["*"], allow_headers=["*"].
+   802→   802→```
+   803→   803→
+   804→   804→### FIX-02 — Gemini returns plain text instead of JSON
+   805→   805→```
+   806→   806→My Gemini 1.5 Flash call is returning plain text or markdown-wrapped JSON
+   807→   807→instead of a pure JSON object. The current gemini_service.py is: [paste file]
+   808→   808→Fix it by:
+   809→   809→1. Adding response_mime_type: "application/json" to generation_config
+   810→   810→2. Stripping any ```json or ``` fences before json.loads()
+   811→   811→3. Adding a fallback: if parsing fails, log the raw response and retry once
+   812→   812→```
+   813→   813→
+   814→   814→### FIX-03 — Supabase insert blocked by RLS
+   815→   815→```
+   816→   816→My FastAPI backend is getting a permission denied error when inserting into
+   817→   817→the analyses table. I am using the anon key. Fix database.py to create a
+   818→   818→second Supabase client using the SUPABASE_SERVICE_KEY (service_role key)
+   819→   819→which bypasses RLS. Name it supabase_admin and use it in analyze.py for
+   820→   820→all insert and upsert operations.
+   821→   821→```
+   822→   822→
+   823→   823→### FIX-04 — Render.com cold start (30-second delay)
+   824→   824→```
+   825→   825→My Render.com free tier backend has a 30-second cold start on the first request.
+   826→   826→Add a keep-alive ping to App.jsx using useEffect and setInterval:
+   827→   827→every 14 minutes, silently call GET /health on the backend to prevent sleep.
+   828→   828→The interval should clear on component unmount. Show the complete updated App.jsx.
+   829→   829→```
+   830→   830→
+   831→   831→### FIX-05 — PDF export not downloading in Safari
+   832→   832→```
+   833→   833→My pdf-lib export function works in Chrome but the download does not trigger
+   834→   834→in Safari. Here is my current handleExportPDF function: [paste function]
+   835→   835→Fix the download trigger to work cross-browser including Safari and mobile browsers.
+   836→   836→```
+   837→   837→
+   838→   838→### FIX-06 — Recharts RadialBarChart not animating
+   839→   839→```
+   840→   840→My recharts RadialBarChart score gauge is not animating from 0 to the score value
+   841→   841→on page mount. Here is the current component code: [paste component]
+   842→   842→Fix it using the isAnimationActive prop and animationBegin/animationDuration,
+   843→   843→or use a useEffect + useState approach that increments the displayed value
+   844→   844→from 0 to the target score over 1.2 seconds using requestAnimationFrame.
+   845→   845→```
+   846→   846→
+   847→   847→---
+   848→   848→
+   849→   849→## FREE TOOLS REFERENCE
+   850→   850→
+   851→   851→| Purpose | Tool | URL | Notes |
+   852→   852→|---|---|---|---|
+   853→   853→| AI Engine | Google Gemini 1.5 Flash | aistudio.google.com | Free, 1M tokens/min |
+   854→   854→| Alt AI | Together.ai (Llama 3) | together.ai | $25 free credit |
+   855→   855→| Frontend deploy | Vercel | vercel.com | Unlimited, free |
+   856→   856→| Backend deploy | Render.com | render.com | 750 hrs/month free |
+   857→   857→| Database + Auth | Supabase | supabase.com | 500MB, 50k rows free |
+   858→   858→| UI components | shadcn/ui | ui.shadcn.com | Copy-paste, free |
+   859→   859→| Icons | lucide-react | lucide.dev | MIT license |
+   860→   860→| Charts | recharts | recharts.org | MIT license |
+   861→   861→| PDF (browser) | pdf-lib | pdf-lib.js.org | MIT license |
+   862→   862→| PDF (server) | PyMuPDF | pymupdf.readthedocs.io | AGPL, free |
+   863→   863→| AI coding | Cursor | cursor.com | Free tier |
+   864→   864→| Alt coding | Bolt.new | bolt.new | Free tier |
+   865→   865→
+   866→   866→---
+   867→   867→
+   868→   868→## ONE-DAY SPRINT SCHEDULE
+   869→   869→
+   870→   870→| Time | Task | Prompts |
+   871→   871→|---|---|---|
+   872→   872→| 9:00 AM | Scaffold repos, install deps, Supabase schema | 01, 02 |
+   873→   873→| 10:00 AM | Gemini service + Resume parser + Schemas | 03, 04, 05 |
+   874→   874→| 11:00 AM | Analyze router + Community router | 06, 07 |
+   875→   875→| 12:00 PM | **Test backend with curl/Postman before touching frontend** | — |
+   876→   876→| 1:00 PM | Landing page + Upload page | 08, 09 |
+   877→   877→| 2:30 PM | Results page + PDF export | 10 |
+   878→   878→| 3:30 PM | Roadmap page + Community page | 11, 12 |
+   879→   879→| 4:30 PM | Deployment config + push to GitHub | 13 |
+   880→   880→| 5:00 PM | Deploy backend to Render.com, frontend to Vercel | — |
+   881→   881→| 5:30 PM | Run test script, fix issues with FIX-0X prompts | 14 |
+   882→   882→| 6:00 PM | **Live demo URL ready** | — |
+   883→   883→
+   884→   884→---
+   885→   885→
+   886→   886→> Start with the MASTER SYSTEM CONTEXT block in every session.
+   887→   887→> Run prompts in order. Test the backend before building the frontend.
+   888→   888→> All infrastructure is free. Total cost to ship: $0.
+   889→   889→```
+   890→   890→
+   891→   891→*AI Career Navigator — Independent Project | Built in one day*
+   892→   892→
