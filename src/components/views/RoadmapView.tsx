@@ -188,7 +188,7 @@ export default function RoadmapView() {
           variant="ghost"
           size="sm"
           className="text-muted-foreground hover:text-foreground"
-          onClick={goResults}
+          onClick={() => goResults(currentAnalysis)}
         >
           <ArrowLeft className="size-4" />
           Back to Results

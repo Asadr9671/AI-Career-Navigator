@@ -2,37 +2,21 @@
  * Resume parser - extracts text from a PDF and validates it looks like a resume.
  *
  * Next.js / TypeScript adaptation of the original `services/resume_parser.py`.
- * Uses `pdf-parse` v2 (Node) instead of PyMuPDF (Python).
- *
- * NOTE: `pdf-parse` v2+ exports a `PDFParse` CLASS (no default export).
- * The old v1 API `import pdfParse from "pdf-parse"` no longer works.
+ * Uses `pdf-parse` v1 (pure JS) instead of PyMuPDF (Python) for serverless deployment compatibility.
  */
-import { PDFParse } from "pdf-parse";
+import pdf from "pdf-parse";
 
 /** Extract text from a PDF given its raw bytes. */
 export async function extractTextFromPdf(fileBytes: Uint8Array): Promise<string> {
-  // pdf-parse v2 takes a `data` Uint8Array (Buffer also works - it converts internally).
-  // Initialize the worker once for Node (idempotent, no-op if already set).
-  try {
-    PDFParse.setWorker();
-  } catch {
-    // Non-fatal: pdfjs will fall back to a fake (main-thread) worker.
-  }
-
-  const parser = new PDFParse({ data: fileBytes });
-  try {
-    const result = await parser.getText();
-    // `result.text` is the full concatenated document text.
-    const cleaned = (result.text || "")
-      .replace(/\r\n/g, "\n")
-      .replace(/[ \t]+/g, " ")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-    return cleaned;
-  } finally {
-    // Always release the underlying pdfjs document to avoid memory leaks.
-    await parser.destroy().catch(() => {});
-  }
+  const buffer = Buffer.from(fileBytes);
+  const result = await pdf(buffer);
+  
+  const cleaned = (result.text || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return cleaned;
 }
 
 /**
