@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  devIndicators: false,
   // pdfjs-dist (used by pdf-parse) dynamically imports its worker module.
   // Turbopack rewrites that import to a .next/dev/server/chunks/ path that
   // doesn't exist, breaking PDF text extraction at runtime.

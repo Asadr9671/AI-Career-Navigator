@@ -1,8 +1,8 @@
 /**
  * POST /api/analyze
  * Body: multipart/form-data with `file` (PDF, ≤5MB) and `target_role` (ANY non-empty
- * career path string the user types — 2-80 chars, sanitized). No fixed role whitelist.
- * Optional: `user_id` (kept for spec parity — we use a single shared DB so it's informational only).
+ * career path string the user types - 2-80 chars, sanitized). No fixed role whitelist.
+ * Optional: `user_id` (kept for spec parity - we use a single shared DB so it's informational only).
  *
  * Flow (mirrors the master spec's POST /analyze/upload):
  *   1. Validate file content type is application/pdf → 400 if not
@@ -40,14 +40,14 @@ export async function POST(req: NextRequest) {
   if (!(file instanceof File)) {
     return envelope(null, "Missing 'file' field.", 400);
   }
-  // Accept ANY career path the user types — just sanitize + length-check it.
+  // Accept ANY career path the user types - just sanitize + length-check it.
   const [roleOk, role, roleMsg] = sanitizeTargetRole(targetRole);
   if (!roleOk) {
     return envelope(null, roleMsg || "Please enter a valid target role.", 400);
   }
   const targetRoleClean = role;
 
-  // 1. Content-type check (File.type may be empty for some uploads — also allow .pdf extension)
+  // 1. Content-type check (File.type may be empty for some uploads - also allow .pdf extension)
   const isPdfType = file.type === "application/pdf";
   const isPdfExt = file.name.toLowerCase().endsWith(".pdf");
   if (!isPdfType && !isPdfExt) {

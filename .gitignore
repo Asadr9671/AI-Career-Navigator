@@ -52,3 +52,7 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Database and tool results
+prisma/db/
+tool-results/

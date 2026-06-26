@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 3D hero scene — floating geometric shapes rendered with three.js via
+ * 3D hero scene - floating geometric shapes rendered with three.js via
  * @react-three/fiber + @react-three/drei. Sits behind the hero text as a
  * ambient, performance-aware animated background.
  *

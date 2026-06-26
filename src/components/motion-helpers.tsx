@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Shared motion helpers — staggered fade-up reveal, used by all views
+ * Shared motion helpers - staggered fade-up reveal, used by all views
  * to keep animation language consistent across the app.
  */
 import { motion, type Variants } from "framer-motion";

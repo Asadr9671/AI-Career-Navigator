@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * LandingView — hero landing page for the AI Career Navigator.
+ * LandingView - hero landing page for the AI Career Navigator.
  * Single-page view (no props). Reads `goUpload` / `goCommunity` from the
  * navigator store to switch logical pages without touching the router.
  *
@@ -34,7 +34,7 @@ import { ROLE_LIST } from "@/lib/role-meta";
 import { useNavigator } from "@/lib/navigator-store";
 
 // The 3D hero scene uses three.js / WebGL which requires `window`. It MUST be
-// loaded client-only (ssr: false) — otherwise the server tries to render the
+// loaded client-only (ssr: false) - otherwise the server tries to render the
 // <Canvas> and produces HTML that doesn't match the client, causing a React
 // hydration mismatch error.
 const HeroScene3D = dynamic(() => import("@/components/hero-scene-3d").then((m) => m.default), {
@@ -59,7 +59,7 @@ const STEPS: Array<{ num: string; Icon: typeof Upload; title: string; desc: stri
 ];
 
 const FEATURES: Array<{ Icon: typeof Scale; title: string; desc: string }> = [
-  { Icon: Scale, title: "Honest scores", desc: "No score inflation — see where you really stand." },
+  { Icon: Scale, title: "Honest scores", desc: "No score inflation - see where you really stand." },
   { Icon: GraduationCap, title: "Real free resources", desc: "YouTube, freeCodeCamp, and official docs only." },
   { Icon: CalendarDays, title: "12-week plan", desc: "Specific mini-projects mapped to every week." },
   { Icon: ShieldCheck, title: "Private by design", desc: "Your resume is never stored after analysis." },
@@ -120,7 +120,7 @@ export default function LandingView() {
             className="mt-6 max-w-2xl text-pretty text-base text-foreground/70 sm:text-lg"
           >
             Upload your resume. Get an honest readiness score, a precise skill gap analysis,
-            and a free 12-week learning roadmap — tailored to the role you want.
+            and a free 12-week learning roadmap - tailored to the role you want.
           </motion.p>
 
           <motion.div
@@ -188,7 +188,7 @@ export default function LandingView() {
         </Reveal>
 
         <div className="relative mt-14">
-          {/* Dashed connector — desktop only */}
+          {/* Dashed connector - desktop only */}
           <div
             aria-hidden
             className="absolute left-[16%] right-[16%] top-[4.25rem] hidden h-px bg-repeat-x md:block"
@@ -229,7 +229,7 @@ export default function LandingView() {
             Works for any career path you&apos;re aiming for
           </h2>
           <p className="mt-4 text-pretty text-sm text-foreground/65 sm:text-base">
-            Type any role — Product Manager, UX Designer, Security Analyst, Game Developer,
+            Type any role - Product Manager, UX Designer, Security Analyst, Game Developer,
             or whatever you&apos;re pursuing. The 6 below are just popular picks to get you
             started.
           </p>
@@ -243,7 +243,7 @@ export default function LandingView() {
                 <div
                   className={`group glass relative h-full cursor-default rounded-2xl border border-border/40 p-6 transition-all duration-300 hover:-translate-y-1.5 ${hoverClass}`}
                 >
-                  {/* Popular badge — these are examples, not the only options */}
+                  {/* Popular badge - these are examples, not the only options */}
                   <span
                     className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300"
                     aria-label="Popular pick"
@@ -268,7 +268,7 @@ export default function LandingView() {
           })}
         </StaggerGroup>
 
-        {/* Custom-role hint — sets expectations for the Upload step */}
+        {/* Custom-role hint - sets expectations for the Upload step */}
         <Reveal variant="up" className="mt-10 flex justify-center">
           <p className="inline-flex items-center gap-1.5 text-sm text-foreground/55">
             Don&apos;t see your role? Just type it on the next step

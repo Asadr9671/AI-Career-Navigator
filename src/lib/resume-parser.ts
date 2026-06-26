@@ -1,5 +1,5 @@
 /**
- * Resume parser — extracts text from a PDF and validates it looks like a resume.
+ * Resume parser - extracts text from a PDF and validates it looks like a resume.
  *
  * Next.js / TypeScript adaptation of the original `services/resume_parser.py`.
  * Uses `pdf-parse` v2 (Node) instead of PyMuPDF (Python).
@@ -11,7 +11,7 @@ import { PDFParse } from "pdf-parse";
 
 /** Extract text from a PDF given its raw bytes. */
 export async function extractTextFromPdf(fileBytes: Uint8Array): Promise<string> {
-  // pdf-parse v2 takes a `data` Uint8Array (Buffer also works — it converts internally).
+  // pdf-parse v2 takes a `data` Uint8Array (Buffer also works - it converts internally).
   // Initialize the worker once for Node (idempotent, no-op if already set).
   try {
     PDFParse.setWorker();

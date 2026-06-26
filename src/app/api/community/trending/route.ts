@@ -1,7 +1,7 @@
 /**
  * GET /api/community/trending?role=<optional>
  * Returns top 15 skill_trends ordered by frequency desc.
- * If `role` query is provided (ANY string — not limited to a whitelist),
+ * If `role` query is provided (ANY string - not limited to a whitelist),
  * filter by exact target_role match. Empty/non-string role → return all.
  */
 import { NextRequest, NextResponse } from "next/server";

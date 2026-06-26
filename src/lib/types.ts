@@ -2,7 +2,7 @@
  * Shared types & constants for the AI Career Navigator.
  * Used by both server (API routes) and client (UI) code.
  *
- * NOTE: The app supports ANY career path the user types — not just the 6
+ * NOTE: The app supports ANY career path the user types - not just the 6
  * "popular" roles listed below. `POPULAR_ROLES` is only used for quick-pick
  * suggestion chips in the UI and for assigning nice icon/color defaults.
  * Any free-text role is accepted by the API (see `sanitizeTargetRole`).
@@ -17,7 +17,7 @@ export const POPULAR_ROLES = [
   "Cloud Engineer",
 ] as const;
 
-/** @deprecated alias kept for backward compatibility — use POPULAR_ROLES. */
+/** @deprecated alias kept for backward compatibility - use POPULAR_ROLES. */
 export const VALID_ROLES = POPULAR_ROLES;
 
 export type PopularRole = (typeof POPULAR_ROLES)[number];
@@ -42,7 +42,7 @@ export interface AnalysisResult {
   target_role: string;
   score: number;
   score_label: string;
-  /** 1-2 sentence justification citing specific resume content — proves the score is real-time. */
+  /** 1-2 sentence justification citing specific resume content - proves the score is real-time. */
   score_justification?: string;
   /** The 5-dimension breakdown behind the final score. */
   dimensions?: DimensionScore[];

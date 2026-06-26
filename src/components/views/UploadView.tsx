@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * UploadView — PDF dropzone + free-text role selector + analyze button.
+ * UploadView - PDF dropzone + free-text role selector + analyze button.
  * On success hands the AnalysisResult to the navigator store (goResults).
  * All visual states animated with framer-motion + AnimatePresence.
  * Palette: violet/cyan accent + per-role hex (no indigo/blue).
@@ -157,7 +157,7 @@ function UploadView() {
         </p>
       </Reveal>
 
-      {/* ───────── Step 1 — dropzone ───────── */}
+      {/* ───────── Step 1 - dropzone ───────── */}
       <section className="mb-14">
         <SectionHeading step="01" title="Upload your resume" />
         <div className="mx-auto max-w-2xl">
@@ -227,7 +227,7 @@ function UploadView() {
         </div>
       </section>
 
-      {/* ───────── Step 2 — role selector (free text + quick-pick chips) ───────── */}
+      {/* ───────── Step 2 - role selector (free text + quick-pick chips) ───────── */}
       <section className="mb-14">
         <SectionHeading step="02" title="Select your target role" />
         <Reveal className="mx-auto max-w-2xl">
@@ -258,7 +258,7 @@ function UploadView() {
 
           {/* Help text + inline validation hint */}
           <p className="mt-2 text-xs text-muted-foreground">
-            Type any career path — we support thousands of roles, not just the popular ones.
+            Type any career path - we support thousands of roles, not just the popular ones.
           </p>
           <AnimatePresence>
             {showRoleHint && (
@@ -318,7 +318,7 @@ function UploadView() {
         </Reveal>
       </section>
 
-      {/* ───────── Step 3 — analyze button ───────── */}
+      {/* ───────── Step 3 - analyze button ───────── */}
       <section className="mb-8">
         <SectionHeading step="03" title="Run the analysis" />
         <div className="flex flex-col items-center gap-4">
@@ -410,7 +410,7 @@ function UploadView() {
             exit={{ opacity: 0 }}
             // Stronger blur on the background so the page content behind is
             // clearly defocused, while the loading box itself stays crisp
-            // (the box is a child of this div, so it's NOT blurred — only
+            // (the box is a child of this div, so it's NOT blurred - only
             // the backdrop behind is).
             className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xl"
             role="status"

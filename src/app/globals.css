@@ -51,7 +51,7 @@
 }
 
 /* Dark-first modern theme: deep slate background with violet/cyan/amber accents.
-   (No indigo or blue — brand palette uses violet + cyan + amber + emerald + rose + teal.) */
+   (No indigo or blue - brand palette uses violet + cyan + amber + emerald + rose + teal.) */
 :root {
   --radius: 0.75rem;
   --background: oklch(0.16 0.02 270);
@@ -95,7 +95,7 @@
 }
 
 .dark {
-  /* Same as :root — we are dark-first */
+  /* Same as :root - we are dark-first */
   --background: oklch(0.16 0.02 270);
   --foreground: oklch(0.97 0.01 270);
   --card: oklch(0.20 0.025 270);

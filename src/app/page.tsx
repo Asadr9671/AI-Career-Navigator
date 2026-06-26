@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AI Career Navigator — single-page app entry.
+ * AI Career Navigator - single-page app entry.
  *
  * Per project constraints the only user-visible route is `/`, so we use the
  * Zustand navigator store to switch between 5 logical views:

@@ -1,5 +1,5 @@
 /**
- * Role metadata — icon + color + tagline for the 6 POPULAR_ROLES, plus a
+ * Role metadata - icon + color + tagline for the 6 POPULAR_ROLES, plus a
  * `getRoleMeta(role)` resolver that returns a sensible default (generic
  * Briefcase icon + deterministic color) for ANY custom career path the user
  * types. Used by Upload / Results / Roadmap / Community / Landing views so

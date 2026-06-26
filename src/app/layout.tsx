@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Career Navigator — Know What's Holding Back Your Career",
+  title: "AI Career Navigator - Know What's Holding Back Your Career",
   description:
     "Upload your resume. Get an honest readiness score, a precise skill gap analysis, and a free 12-week learning roadmap tailored to the role you want. Built with AI.",
   keywords: [
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "AI Career Navigator" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/acn-logo.png",
   },
   openGraph: {
     title: "AI Career Navigator",

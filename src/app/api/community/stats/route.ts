@@ -23,7 +23,7 @@ export async function GET() {
   try {
     const totalAnalyses = await db.analysis.count();
 
-    // average_score via aggregate (single _avg — this IS supported on SQLite)
+    // average_score via aggregate (single _avg - this IS supported on SQLite)
     let averageScore = 0;
     if (totalAnalyses > 0) {
       const agg = await db.analysis.aggregate({ _avg: { readinessScore: true } });

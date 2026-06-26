@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * CommunityView — anonymized community insights dashboard.
+ * CommunityView - anonymized community insights dashboard.
  *
  * Pulls two endpoints on mount:
  *   GET /api/community/stats          → 4 aggregate metric cards
  *   GET /api/community/trending?role= → top-15 skill bar chart + ranked table
  *
- * All data is anonymized — no personal info is ever displayed.
+ * All data is anonymized - no personal info is ever displayed.
  * Color language: violet / cyan / amber / emerald / rose / teal for the 6
  * popular roles, plus fuchsia / lime / orange / sky deterministically
  * assigned to any custom role via `getRoleColor` (no indigo / blue).
@@ -145,7 +145,7 @@ function CommunityView() {
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [trending, setTrending] = useState<TrendingSkill[]>([]);
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  /** Distinct target roles seen in the community data — drives the filter
+  /** Distinct target roles seen in the community data - drives the filter
    *  dropdown so ANY analyzed role (not just the 6 popular ones) is selectable. */
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
 
@@ -240,7 +240,7 @@ function CommunityView() {
           value:
             stats.average_score > 0
               ? `${stats.average_score}/100`
-              : "—",
+              : "-",
         },
         {
           key: "top",
@@ -248,7 +248,7 @@ function CommunityView() {
           icon: Star,
           accent: "amber",
           value:
-            stats.top_role && stats.top_role !== "N/A" ? stats.top_role : "—",
+            stats.top_role && stats.top_role !== "N/A" ? stats.top_role : "-",
         },
         {
           key: "gap",
@@ -258,7 +258,7 @@ function CommunityView() {
           value:
             stats.most_common_gap && stats.most_common_gap !== "N/A"
               ? stats.most_common_gap
-              : "—",
+              : "-",
         },
       ]
     : [];
@@ -282,7 +282,7 @@ function CommunityView() {
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm sm:text-base text-muted-foreground">
               See what skills people across the platform are working on. All
-              data is anonymized — no personal information is ever displayed.
+              data is anonymized - no personal information is ever displayed.
             </p>
           </div>
         </Reveal>
@@ -484,7 +484,7 @@ function CommunityView() {
             ) : trending.length === 0 ? (
               <div className="rounded-lg border border-dashed border-white/10 p-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No data yet — be the first to analyze your resume!
+                  No data yet - be the first to analyze your resume!
                 </p>
                 <Button className="mt-4" onClick={() => goUpload()}>
                   <Sparkles className="size-4" /> Analyze My Resume

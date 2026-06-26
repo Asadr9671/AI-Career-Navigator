@@ -1,5 +1,5 @@
 /**
- * View-state store — single-page navigation without router routes.
+ * View-state store - single-page navigation without router routes.
  * The app exposes only `/` (per project constraints), so we use a Zustand
  * store to switch between the 5 logical "pages": landing / upload / results / roadmap / community.
  *

@@ -1,6 +1,6 @@
 /**
  * GET /api
- * Health check — mirrors the master spec's `GET /` on the FastAPI backend.
+ * Health check - mirrors the master spec's `GET /` on the FastAPI backend.
  */
 import { NextResponse } from "next/server";
 

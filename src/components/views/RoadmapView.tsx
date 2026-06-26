@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * RoadmapView — 12-week learning roadmap.
+ * RoadmapView - 12-week learning roadmap.
  *
  * Reads `currentAnalysis` from the navigator store. If null, shows an empty
  * state directing the user to upload. Otherwise renders:
@@ -31,7 +31,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 type FilterTab = "all" | "remaining" | "completed";
 
-/** Color groups per spec — weeks 1-4 cyan, 5-8 amber, 9-12 emerald. */
+/** Color groups per spec - weeks 1-4 cyan, 5-8 amber, 9-12 emerald. */
 const WEEK_COLOR = {
   cyan: {
     badge: "border-cyan-500/40 bg-cyan-500/15 text-cyan-200",
@@ -94,7 +94,7 @@ export default function RoadmapView() {
           setCompleted(next);
         }
       }
-    } catch { /* ignore — corrupt JSON, start fresh */ }
+    } catch { /* ignore - corrupt JSON, start fresh */ }
     setHydrated(true);
   }, [storageKey]);
 
@@ -409,7 +409,7 @@ export default function RoadmapView() {
             </div>
             <p className="text-sm text-muted-foreground">
               {filter === "completed"
-                ? "No completed weeks yet — check off your first one!"
+                ? "No completed weeks yet - check off your first one!"
                 : "All weeks are complete. Time to celebrate!"}
             </p>
           </motion.div>
@@ -438,7 +438,7 @@ export default function RoadmapView() {
                     <span className="text-gradient">Roadmap Complete!</span>
                   </h2>
                   <p className="text-sm text-muted-foreground sm:text-base">
-                    You&apos;ve put in the work — time to update your resume and apply.
+                    You&apos;ve put in the work - time to update your resume and apply.
                   </p>
                 </div>
                 <Button

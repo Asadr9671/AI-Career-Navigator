@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ResultsView — the analysis results dashboard.
+ * ResultsView - the analysis results dashboard.
  *
  * Shows an animated circular readiness gauge, skill-gap pills, strength pills,
  * and action buttons (View Roadmap / Export PDF / Analyze Another).
@@ -169,7 +169,7 @@ async function exportPDF(
   toast: ReturnType<typeof useToast>["toast"]
 ): Promise<void> {
   try {
-    // Defensive fallbacks — the analysis object should already be normalized
+    // Defensive fallbacks - the analysis object should already be normalized
     // by the caller, but we double-guard here so a malformed analysis never
     // crashes the PDF export.
     const role = analysis.target_role || "Your Role";
@@ -236,7 +236,7 @@ async function exportPDF(
     y -= lineH;
 
     cover.drawText(
-      `Readiness Score: ${analysis.score ?? 0} — ${analysis.score_label ?? `${analysis.score ?? 0}% ready`}`,
+      `Readiness Score: ${analysis.score ?? 0} - ${analysis.score_label ?? `${analysis.score ?? 0}% ready`}`,
       {
         x: M,
         y,
@@ -288,7 +288,7 @@ async function exportPDF(
       y -= lineH;
       for (const dim of dimensions) {
         const label = dimensionLabel(dim.name);
-        const evidencePart = dim.evidence ? ` — ${dim.evidence}` : "";
+        const evidencePart = dim.evidence ? ` - ${dim.evidence}` : "";
         const line = `•  ${label}: ${dim.score}/100${evidencePart}`;
         for (const ln of wrapText(line, helv, 10, W - M * 2 - 8)) {
           if (y < M + lineH) break;
@@ -476,7 +476,7 @@ export default function ResultsView() {
   const [pdfLoading, setPdfLoading] = React.useState(false);
 
   // Normalize the analysis so all fields are always present with safe defaults
-  // — defends against partially-formed analysis objects (e.g. if the store was
+  // - defends against partially-formed analysis objects (e.g. if the store was
   // hydrated from a stale source or an older analysis without the new fields).
   // Without this, `analysis.gaps.length` or `slugify(analysis.target_role)`
   // can throw when those fields are undefined.
@@ -698,7 +698,7 @@ export default function ResultsView() {
                 </div>
               </div>
 
-              {/* A. Score justification — quote-style block */}
+              {/* A. Score justification - quote-style block */}
               {analysis.score_justification &&
                 analysis.score_justification.trim() && (
                   <blockquote
@@ -709,7 +709,7 @@ export default function ResultsView() {
                   </blockquote>
                 )}
 
-              {/* B. Dimension breakdown — 5 progress-bar rows */}
+              {/* B. Dimension breakdown - 5 progress-bar rows */}
               {analysis.dimensions && analysis.dimensions.length > 0 && (
                 <StaggerGroup className="flex flex-col gap-4" stagger={0.07}>
                   {analysis.dimensions.map((dim: DimensionScore, idx: number) => {

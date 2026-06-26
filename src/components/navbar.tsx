@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * Top navigation bar — fixed at the top, glassmorphism style.
+ * Top navigation bar - fixed at the top, glassmorphism style.
  * Shows brand on the left, and 3 nav buttons on the right
  * (Home | Analyze Resume | Community).
  * Active state is derived from the navigator store.
  */
 import { motion } from "framer-motion";
-import { Compass, FileText, Home, Users } from "lucide-react";
+import { FileText, Home, Users } from "lucide-react";
 import { useNavigator, type ViewName } from "@/lib/navigator-store";
 import { cn } from "@/lib/utils";
 
@@ -42,12 +42,16 @@ export function Navbar() {
           <button
             onClick={goHome}
             className="group flex items-center gap-2.5"
-            aria-label="AI Career Navigator — home"
+            aria-label="AI Career Navigator - home"
           >
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 shadow-glow-violet">
-              <Compass className="h-5 w-5 text-white" />
-              <span className="absolute inset-0 rounded-xl ring-2 ring-white/20 group-hover:ring-white/40 transition" />
+            <span className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden bg-white/5 border border-white/10 group-hover:border-white/20 shadow-glow-violet transition">
+              <img
+                src="/acn-logo.png"
+                alt="ACN Logo"
+                className="h-full w-full object-contain p-1"
+              />
             </span>
+
             <span className="hidden sm:flex flex-col leading-none">
               <span className="text-sm font-semibold tracking-tight">AI Career Navigator</span>
               <span className="text-[10px] text-muted-foreground">Know your gaps. Close them.</span>

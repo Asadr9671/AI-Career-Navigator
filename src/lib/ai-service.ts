@@ -1,10 +1,10 @@
 /**
- * AI service — analyzes a resume against a target role using z-ai-web-dev-sdk LLM.
+ * AI service - analyzes a resume against a target role using z-ai-web-dev-sdk LLM.
  *
  * This is the Next.js / TypeScript adaptation of the original
  * `services/gemini_service.py` from the master prompt.
  *
- * PROMPT DESIGN (v2 — fixes the "same score for every resume" bug):
+ * PROMPT DESIGN (v2 - fixes the "same score for every resume" bug):
  * The original prompt anchored the AI on "70 = competitive" which caused it to
  * cluster ALL decent resumes around 74 and refuse to score 90+ even for
  * genuinely exceptional candidates (e.g. a Principal Engineer at Google with a
@@ -111,7 +111,7 @@ For each week provide:
     (specific enough that the candidate knows exactly what to build)
 
 Return ONLY a valid JSON object with this EXACT structure. No preamble, no
-markdown fences, no explanation — pure JSON only:
+markdown fences, no explanation - pure JSON only:
 {
   "dimensions": [
     {"name": "relevant_experience", "score": 85, "evidence": "6 years as ML Engineer at Google DeepMind and Meta"},
@@ -238,6 +238,87 @@ function sanitizeJsonString(raw: string): string {
 }
 
 /**
+ * Call Gemini API using native fetch.
+ */
+async function callGemini(prompt: string, apiKey: string): Promise<string> {
+  const model = "gemini-3.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }]
+        }
+      ],
+      systemInstruction: {
+        parts: [{ text: "You are a strict JSON-only career analysis engine. You return ONLY raw valid JSON, never markdown or prose. You score resumes honestly across a wide range (10-100) based on actual evidence - never defaulting to a safe middle score." }]
+      },
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!content) {
+    throw new Error("No content returned from Gemini API");
+  }
+  return content;
+}
+
+/**
+ * Generate content using Z.ai with dynamic fallback to Gemini if needed.
+ */
+async function generateContent(
+  prompt: string,
+  zai: any
+): Promise<string> {
+  const geminiKey = process.env.GEMINI_API_KEY || "";
+
+  if (!zai) {
+    console.log("[ai-service] Z.ai client not initialized, using Gemini...");
+    return await callGemini(prompt, geminiKey);
+  }
+
+  try {
+    const completion = await zai.chat.completions.create({
+      model: "glm-4-plus",
+      messages: [
+        {
+          role: "assistant",
+          content:
+            "You are a strict JSON-only career analysis engine. You return ONLY raw valid JSON, never markdown or prose. You score resumes honestly across a wide range (10-100) based on actual evidence - never defaulting to a safe middle score.",
+        },
+        { role: "user", content: prompt },
+      ],
+      thinking: { type: "disabled" },
+    });
+
+    const rawContent = completion.choices?.[0]?.message?.content ?? "";
+    if (!rawContent) {
+      throw new Error("Empty response from Z.ai");
+    }
+    return rawContent;
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`[ai-service] Z.ai request failed: ${msg}. Falling back to Gemini...`);
+    return await callGemini(prompt, geminiKey);
+  }
+}
+
+/**
  * Analyze a resume against a target role.
  * Returns either a valid AnalysisResult or `{ error: true, message }`.
  */
@@ -245,11 +326,11 @@ export async function analyzeResume(
   resumeText: string,
   targetRole: string,
 ): Promise<AnalysisResult | { error: true; message: string }> {
-  let zai: Awaited<ReturnType<typeof ZAI.create>>;
+  let zai: any = null;
   try {
     zai = await ZAI.create();
   } catch (e) {
-    return { error: true, message: "AI engine unavailable. Please try again later." };
+    console.warn("[ai-service] Z.ai initialization failed, will fall back to Gemini:", e);
   }
 
   const basePrompt = buildPrompt(resumeText, targetRole);
@@ -259,19 +340,8 @@ export async function analyzeResume(
   for (let attempt = 0; attempt < 2; attempt++) {
     const prompt = attempt === 0 ? basePrompt : basePrompt + retrySuffix;
     try {
-      const completion = await zai.chat.completions.create({
-        messages: [
-          {
-            role: "assistant",
-            content:
-              "You are a strict JSON-only career analysis engine. You return ONLY raw valid JSON, never markdown or prose. You score resumes honestly across a wide range (10-100) based on actual evidence — never defaulting to a safe middle score.",
-          },
-          { role: "user", content: prompt },
-        ],
-        thinking: { type: "disabled" },
-      });
+      const rawContent = await generateContent(prompt, zai);
 
-      const rawContent = completion.choices?.[0]?.message?.content ?? "";
       if (!rawContent) {
         if (attempt === 0) continue;
         return { error: true, message: "Analysis failed: empty AI response." };
@@ -321,3 +391,4 @@ export async function analyzeResume(
 
   return { error: true, message: "Analysis failed after retry." };
 }
+
