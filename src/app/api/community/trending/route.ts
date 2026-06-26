@@ -9,6 +9,7 @@ import type { ApiResponse, TrendingSkill } from "@/lib/types";
 import { getCommunityTrending } from "@/lib/community-store";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);

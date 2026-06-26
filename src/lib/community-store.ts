@@ -8,7 +8,7 @@ async function fetchGlobalAnalyses(): Promise<AnalysisResult[]> {
   try {
     const res = await fetch(BUCKET_URL, {
       headers: { "Accept": "application/json" },
-      next: { revalidate: 10 } // Cache for 10 seconds to avoid exceeding API limits
+      cache: "no-store"
     });
     if (res.status === 404) return [];
     if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
