@@ -292,23 +292,36 @@ function CommunityView() {
           className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
           stagger={0.08}
         >
-          {statsCards.map((c) => (
-            <Reveal key={c.key} i={1} variant="scale" as="div">
-              <Card className="glass relative p-5 gap-0 overflow-hidden">
-                <div
-                  className={`absolute top-3 right-3 size-10 rounded-xl flex items-center justify-center ${ACCENT_SQUARE[c.accent]}`}
-                >
-                  <c.icon className="size-5" />
-                </div>
-                <p className="pr-12 text-2xl sm:text-3xl font-bold tracking-tight break-words leading-tight">
-                  {c.value}
-                </p>
-                <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground">
-                  {c.label}
-                </p>
-              </Card>
-            </Reveal>
-          ))}
+          {statsCards.map((c) => {
+            // Long values (e.g. "Performance optimization at scale") need a
+            // smaller font + tight line-height so they wrap cleanly inside the
+            // card without breaking mid-word. Short numeric values get the big
+            // bold treatment.
+            const isLong = (c.value?.length ?? 0) > 14;
+            return (
+              <Reveal key={c.key} i={1} variant="scale" as="div">
+                <Card className="glass relative flex h-full flex-col p-5 gap-0 overflow-hidden">
+                  <div
+                    className={`absolute top-3 right-3 size-10 rounded-xl flex items-center justify-center ${ACCENT_SQUARE[c.accent]}`}
+                  >
+                    <c.icon className="size-5" />
+                  </div>
+                  <p
+                    className={
+                      isLong
+                        ? "pr-12 text-base sm:text-lg font-semibold tracking-tight break-words leading-snug min-h-[2.5rem]"
+                        : "pr-12 text-2xl sm:text-3xl font-bold tracking-tight break-words leading-tight"
+                    }
+                  >
+                    {c.value}
+                  </p>
+                  <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground">
+                    {c.label}
+                  </p>
+                </Card>
+              </Reveal>
+            );
+          })}
 
           {/* Skeleton placeholders while fetching */}
           {loadingStats &&

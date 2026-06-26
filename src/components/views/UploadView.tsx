@@ -408,16 +408,23 @@ function UploadView() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm"
+            // Stronger blur on the background so the page content behind is
+            // clearly defocused, while the loading box itself stays crisp
+            // (the box is a child of this div, so it's NOT blurred — only
+            // the backdrop behind is).
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xl"
             role="status"
             aria-live="polite"
           >
             <motion.div
-              initial={{ scale: 0.94, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.94, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="glass-strong w-[90%] max-w-md rounded-2xl border border-violet-400/30 p-8 text-center shadow-glow-violet"
+              initial={{ scale: 0.94, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0, y: 12 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              // Solid (non-glass) background so the box is fully opaque and
+              // clearly readable on top of the blurred backdrop. Generous
+              // padding + glow border for prominence.
+              className="relative w-[90%] max-w-md rounded-2xl border border-violet-400/40 bg-slate-900/95 p-8 text-center shadow-glow-violet"
             >
               <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/30 to-cyan-500/20 text-violet-200">
                 <Loader2 className="size-8 animate-spin" />
