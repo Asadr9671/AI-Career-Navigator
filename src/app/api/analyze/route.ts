@@ -1,6 +1,7 @@
 /**
  * POST /api/analyze
- * Body: multipart/form-data with `file` (PDF, ≤5MB) and `target_role` (must be in VALID_ROLES).
+ * Body: multipart/form-data with `file` (PDF, ≤5MB) and `target_role` (ANY non-empty
+ * career path string the user types — 2-80 chars, sanitized). No fixed role whitelist.
  * Optional: `user_id` (kept for spec parity — we use a single shared DB so it's informational only).
  *
  * Flow (mirrors the master spec's POST /analyze/upload):
@@ -18,7 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { analyzeResume } from "@/lib/ai-service";
 import { extractTextFromPdf, isResume, truncateForModel, validateResume } from "@/lib/resume-parser";
-import { VALID_ROLES, type AnalysisResult, type ApiResponse } from "@/lib/types";
+import { sanitizeTargetRole, type AnalysisResult, type ApiResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // LLM call can take a while
@@ -39,9 +40,12 @@ export async function POST(req: NextRequest) {
   if (!(file instanceof File)) {
     return envelope(null, "Missing 'file' field.", 400);
   }
-  if (typeof targetRole !== "string" || !VALID_ROLES.includes(targetRole as never)) {
-    return envelope(null, `target_role must be one of: ${VALID_ROLES.join(", ")}`, 400);
+  // Accept ANY career path the user types — just sanitize + length-check it.
+  const [roleOk, role, roleMsg] = sanitizeTargetRole(targetRole);
+  if (!roleOk) {
+    return envelope(null, roleMsg || "Please enter a valid target role.", 400);
   }
+  const targetRoleClean = role;
 
   // 1. Content-type check (File.type may be empty for some uploads — also allow .pdf extension)
   const isPdfType = file.type === "application/pdf";
@@ -79,8 +83,8 @@ export async function POST(req: NextRequest) {
     return envelope(null, "This does not appear to be a resume. Please upload your CV or resume.", 422);
   }
 
-  // 6. AI analysis
-  const result = await analyzeResume(text, targetRole);
+  // 6. AI analysis (use the sanitized role)
+  const result = await analyzeResume(text, targetRoleClean);
   if ("error" in result) {
     return envelope(null, result.message, 502);
   }
@@ -105,7 +109,7 @@ export async function POST(req: NextRequest) {
     // Upsert each gap into skill_trends (increment frequency on conflict)
     for (const gap of result.gaps) {
       const existing = await db.skillTrend.findUnique({
-        where: { targetRole_skillName: { targetRole, skillName: gap } },
+        where: { targetRole_skillName: { targetRole: targetRoleClean, skillName: gap } },
       });
       if (existing) {
         await db.skillTrend.update({
@@ -114,7 +118,7 @@ export async function POST(req: NextRequest) {
         });
       } else {
         await db.skillTrend.create({
-          data: { targetRole, skillName: gap, frequency: 1, lastSeen: new Date() },
+          data: { targetRole: targetRoleClean, skillName: gap, frequency: 1, lastSeen: new Date() },
         });
       }
     }

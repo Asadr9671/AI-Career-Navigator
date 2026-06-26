@@ -20,7 +20,7 @@ import {
   ArrowLeft, BookOpen, Wrench, CheckCircle2, Trophy, ExternalLink, CalendarDays, Flag,
 } from "lucide-react";
 import { useNavigator } from "@/lib/navigator-store";
-import { ROLE_META } from "@/lib/role-meta";
+import { getRoleMeta } from "@/lib/role-meta";
 import type { RoadmapWeek } from "@/lib/types";
 import { Reveal } from "@/components/motion-helpers";
 import { Button } from "@/components/ui/button";
@@ -159,9 +159,8 @@ export default function RoadmapView() {
   const progressPct = total ? (completedCount / total) * 100 : 0;
   const isComplete = weeks.length === 12 && completedCount === 12;
 
-  const roleMeta =
-    ROLE_META[currentAnalysis.target_role as keyof typeof ROLE_META];
-  const RoleIcon = roleMeta?.icon ?? Flag;
+  const roleMeta = getRoleMeta(currentAnalysis.target_role);
+  const RoleIcon = roleMeta.icon;
 
   const counts = {
     all: weeks.length,
@@ -206,9 +205,17 @@ export default function RoadmapView() {
             <div className="flex flex-wrap items-center gap-2">
               <Badge
                 variant="outline"
-                className="gap-1.5 border-violet-500/40 bg-violet-500/10 px-3 py-1 text-sm text-violet-200"
+                className="gap-1.5 border-violet-500/40 bg-violet-500/10 pl-1 pr-3 py-1 text-sm text-violet-200"
               >
-                <RoleIcon className="size-3.5" />
+                <span
+                  aria-hidden="true"
+                  className="inline-flex size-5 items-center justify-center rounded-sm text-white shadow-sm"
+                  style={{
+                    background: `linear-gradient(135deg, ${roleMeta.color.hex}, ${roleMeta.color.hex}aa)`,
+                  }}
+                >
+                  <RoleIcon className="size-3" />
+                </span>
                 {currentAnalysis.target_role}
               </Badge>
               <Badge

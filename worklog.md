@@ -239,3 +239,144 @@ Stage Summary:
 - All issues fixed. The website now runs perfectly end-to-end.
 - Two config-level fixes: (1) `serverExternalPackages` in next.config.ts for pdfjs-dist worker resolution, (2) Prisma groupBy replaced with manual counting for SQLite compatibility.
 - The full golden path (Landing → Upload → Analyze → Results → Roadmap → Community) is browser-verified on both desktop and mobile.
+
+---
+Task ID: 6 (custom-roles backend)
+Agent: main
+Task: Remove the 6-role whitelist — accept ANY career path the user types. Backend + shared lib changes.
+
+Work Log:
+- `src/lib/types.ts`:
+  - Renamed `VALID_ROLES` → `POPULAR_ROLES` (kept `VALID_ROLES` as a @deprecated alias for backward compat). The 6 roles are now "popular suggestions" only, NOT a whitelist.
+  - Added `sanitizeTargetRole(raw): [ok, normalizedRole, message]` — trims, collapses whitespace, rejects empty / <2 chars / >80 chars / control chars / angle brackets. Returns the cleaned role.
+  - Added `getRoleColor(role)` — returns the known color for the 6 popular roles, OR a deterministic color from a 10-color palette (violet/cyan/amber/emerald/rose/teal/fuchsia/lime/orange/sky) via a stable string hash. Same role → same color, always.
+  - Added a `CUSTOM_COLOR_PALETTE` of 10 brand-safe colors (no indigo/blue).
+- `src/app/api/analyze/route.ts`: replaced `VALID_ROLES.includes(targetRole)` whitelist check with `sanitizeTargetRole(targetRole)`. Now accepts ANY 2-80 char career path string. All downstream uses (AI call, DB insert, skill_trend upsert) use the sanitized `targetRoleClean`.
+- `src/app/api/community/trending/route.ts`: removed the `ROLES.includes(role)` whitelist filter. Now accepts ANY non-empty role string (trimmed, ≤80 chars) as the `?role=` query and filters by exact `targetRole` match.
+- `src/lib/role-meta.ts`: added `getRoleMeta(role)` — returns the rich meta (specific icon + tagline) for the 6 popular roles, OR a generic `Briefcase` icon + deterministic color + empty tagline for any custom role. Kept `ROLE_LIST` (the 6 popular roles) for quick-pick suggestion chips.
+
+Verification (curl):
+- POST /api/analyze with `target_role=Product Manager` → 200, score 74, 8 gaps, 12-week roadmap, score_label "74% ready for Product Manager".
+- POST /api/analyze with `target_role=` → 400 "Please enter a target role."
+- POST /api/analyze with `target_role=X` → 400 "Role must be at least 2 characters."
+- GET /api/community/trending?role=Product%20Manager → 8 matching skills (Financial modeling and P&L understanding, etc.).
+
+Stage Summary:
+- Backend fully supports any career path. Ready for frontend view updates.
+- New exports for frontend: `getRoleMeta(role)`, `getRoleColor(role)`, `sanitizeTargetRole(raw)`, `POPULAR_ROLES` (suggestions). `VALID_ROLES` still works as an alias.
+
+---
+Task ID: 7-b
+Agent: full-stack-developer
+Task: Update LandingView's "Career paths" section so messaging reflects that the app works for ANY career path the user types — the 6 role cards become "popular picks" examples, not the only options. Small hero stat tweak too.
+
+Work Log:
+- Read worklog (esp. Task ID: 6 — backend now accepts any 2–80 char role; `ROLE_LIST` is popular-picks only) and the existing `LandingView.tsx`.
+- Added `Star` to the lucide-react import block.
+- Hero stat chip: changed `{ value: "6", label: "career paths" }` → `{ value: "Any", label: "career path" }` so the floating chip no longer advertises a 6-role cap.
+- ROLES section header:
+  - Kicker: "Career Paths" → "Any Career Path".
+  - Heading: "Works for 6 career paths" → "Works for any career path you're aiming for".
+  - Added a muted subtitle paragraph naming example custom roles (Product Manager, UX Designer, Security Analyst, Game Developer) and clarifying the 6 cards are just popular picks.
+- Role cards: kept the 3×2 grid, role-colored icon tile, name, tagline, hover lift + glow, and `cursor-default` (still NON-interactive — no onClick / no navigation). Added a small amber "Popular" badge (Star icon + label) absolutely positioned in the top-right corner of each card to reframe them as examples.
+- Added a centered "see more" hint below the grid: "Don't see your role? Just type it on the next step →" (muted, with an `ArrowRight` icon, `aria-hidden` on the decorative arrow). Wrapped in a `<Reveal variant="up">` for consistent entrance animation.
+- Left the hero (except the stat chip), how-it-works, why-trust-us, and final CTA sections untouched. No CTAs were changed — `goUpload()` / `goCommunity()` still wired the same way.
+- No indigo/blue colors introduced (used amber for the Popular badge to match the existing amber accent in the Why-Trust-Us kicker). Component remains `"use client"`, default export, no props, TS strict, responsive, with semantic `<section aria-label>` and `aria-label`/`aria-hidden` where appropriate.
+- Ran `cd /home/z/my-project && bun run lint` → exit code 0, no errors. Did not run the dev server.
+
+Stage Summary:
+- `src/components/views/LandingView.tsx` updated: messaging now matches the custom-roles backend (any career path supported). 6 cards reframed as popular examples via a Star "Popular" badge, plus a custom-role hint line below the grid nudging users to the Upload step.
+- Lint clean. No other files touched. Hero / how-it-works / why-trust-us / final CTA preserved verbatim.
+
+---
+Task ID: 7-d
+Agent: full-stack-developer
+Task: Update CommunityView role-filter dropdown to derive its options from the actual community data (not the hardcoded 6-role whitelist) and switch chart bars + table badges to use `getRoleColor` so ANY analyzed career path shows up with a stable, brand-safe color.
+
+Work Log:
+- Read `worklog.md` (esp. Task ID 6 — confirmed the backend now accepts ANY role string and exposes `getRoleColor(role)` + `sanitizeTargetRole` in `src/lib/types.ts`) and the existing `src/components/views/CommunityView.tsx`.
+- Replaced the `VALID_ROLES` + `ROLE_COLORS` imports with a single `getRoleColor` import from `@/lib/types`.
+- Replaced the static `ROLE_BADGE_CLASS: Record<role, class>` map (which only knew the 6 popular roles) with `TOKEN_BADGE_CLASS: Record<token, class>` covering all 10 brand-palette colors (violet / cyan / amber / emerald / rose / teal / fuchsia / lime / orange / sky) — static class strings so the Tailwind JIT can see them.
+- Rewrote `roleBadgeClass(role)` to resolve via `getRoleColor(role).token` (with violet as the ultimate fallback) — every custom role now gets a colored badge that matches its chart bar.
+- Rewrote `roleHex(role)` to return `getRoleColor(role).hex` directly — covers popular + custom roles with a stable hash.
+- Added `availableRoles: string[]` state; populated it inside `fetchTrending` ONLY when `role === "all"` (the unfiltered fetch) by taking `new Set(data.map(d => d.target_role))` and sorting alphabetically with `localeCompare`. This keeps the dropdown stable (doesn't shrink) when a specific role is selected.
+- Updated the `<SelectContent>` to render "All Roles" + `availableRoles.map(...)` instead of `VALID_ROLES.map(...)`. Empty state (no data) naturally falls through to just "All Roles".
+- Updated the top-of-file color-language comment to mention the extended 10-color palette.
+- Left stats row, chart layout, ranked table layout, and disclaimer 100% unchanged. Select still has its `sr-only` label; chart still has `role="img"` + `aria-label`. All fetches remain relative URLs. Still `"use client"` + default export + no props + strict TS.
+- Ran `cd /home/z/my-project && bun run lint` → clean, zero errors, zero warnings.
+
+Stage Summary:
+- Artifact: `src/components/views/CommunityView.tsx` (default export `CommunityView`, no props).
+- Role-filter dropdown now lists every role that actually exists in the community (e.g. "Product Manager", "UX Designer", etc. — anything a user has analyzed for), auto-derived from `/api/community/trending` (unfiltered) and re-derived whenever the user switches back to "All Roles".
+- Chart bar colors + table role badges use `getRoleColor(role)` so ANY role — popular or custom — gets a deterministic, brand-safe color that is identical in both the chart and the table.
+- No indigo / blue introduced; the extended palette (fuchsia / lime / orange / sky) matches `CUSTOM_COLOR_PALETTE` in `src/lib/types.ts`.
+
+---
+Task ID: 7-c
+Agent: full-stack-developer
+Task: Update ResultsView and RoadmapView to use the new `getRoleMeta(role)` resolver instead of the broken `ROLE_META[role]` Record lookup, so the role badge renders for ANY career path (including custom ones like "Product Manager"). The badge should display the role's icon in a colored gradient square (using `meta.color.hex`) plus the role name.
+
+Work Log:
+- Read worklog (especially Task 6 entry) + both target files + `src/lib/role-meta.ts` to understand the new resolver: `getRoleMeta(role)` returns `{ role, icon, color:{token,hex}, tagline, popular }` — popular roles get a specific Lucide icon + tagline; custom roles get a generic `Briefcase` icon + deterministic palette color + empty tagline.
+- ResultsView.tsx:
+  - Replaced `import { ROLE_META } from "@/lib/role-meta"` with `import { getRoleMeta } from "@/lib/role-meta"`.
+  - Replaced `const roleMeta = ROLE_META[analysis.target_role as keyof typeof ROLE_META]; const RoleIcon = roleMeta?.icon ?? Trophy;` with `const roleMeta = getRoleMeta(analysis.target_role); const RoleIcon = roleMeta.icon;` (no Trophy fallback needed — getRoleMeta always returns an icon). `Trophy` import is still used by the "View Full Roadmap" button, so it stays.
+  - Redesigned the role badge: kept the existing score-based pill container (`cc.border/bg/text`), but wrapped the icon in a 24×24 gradient square using `linear-gradient(135deg, ${roleMeta.color.hex}, ${roleMeta.color.hex}aa)`. Adjusted padding (`pl-1.5 pr-3.5`) so the square sits flush against the pill edge. Icon is now white-on-gradient for better contrast. Added `aria-hidden="true"` on the decorative gradient square since the role name text already conveys the role.
+  - Verified `analysis.score_label` (e.g. "74% ready for Product Manager") still renders via `<motion.span>{analysis.score_label}</motion.span>` — unchanged, API-provided.
+  - Badge currently does NOT show a tagline, so the "only show tagline if non-empty" rule was not applicable.
+- RoadmapView.tsx:
+  - Same import swap (`ROLE_META` → `getRoleMeta`).
+  - Same lookup swap (`ROLE_META[currentAnalysis.target_role as keyof typeof ROLE_META]` → `getRoleMeta(currentAnalysis.target_role)`); dropped the `?? Flag` fallback. `Flag` is still used in the Week badge and `Trophy` in the completion banner, so both imports stay valid.
+  - Redesigned the header role badge: kept the existing violet pill container, wrapped the icon in a 20×20 gradient square using `linear-gradient(135deg, ${roleMeta.color.hex}, ${roleMeta.color.hex}aa)`. Adjusted padding (`pl-1 pr-3`). White icon on gradient. `aria-hidden="true"` on the decorative square.
+- Ran `bun run lint` — clean (no errors, no warnings).
+- Did NOT touch: score gauge, gaps/strengths pills, PDF export, week cards, filter tabs, progress bar, localStorage logic, completion banner, back button, empty states. Both files remain `"use client"` + default export + no props + TypeScript strict.
+
+Stage Summary:
+- Both ResultsView and RoadmapView now render the role badge correctly for ANY career path. For popular roles the badge shows the specific Lucide icon (Code2, Brain, Server, BarChart3, Layers, Cloud) in that role's brand-color gradient square. For custom roles like "Product Manager" it shows the generic `Briefcase` icon in a deterministic palette-color gradient square — no more `undefined` lookups, no broken UI.
+- The badge uses `meta.color.hex` (role color) for the gradient square, while the pill container retains its existing score-based (ResultsView) / violet (RoadmapView) styling. Both are accessible (decorative square hidden from screen readers, role name text carries the meaning) and responsive.
+- Lint clean. Ready for the next subagent (e.g. UploadView badge / Community view badge updates if still pending).
+
+---
+Task ID: 7-a
+Agent: full-stack-developer
+Task: Replace the fixed 6-card role grid in UploadView with a free-text role input + quick-pick suggestion chips (frontend half of the custom-roles feature).
+
+Work Log:
+- Read worklog (Task 6) + existing `UploadView.tsx` + `lib/types.ts` + `lib/role-meta.ts` + `components/ui/input.tsx` to confirm the new backend contract (`sanitizeTargetRole`, `getRoleColor`, `POPULAR_ROLES`, `ROLE_LIST`) and the available shadcn `Input`.
+- State change: replaced `targetRole: TargetRole | null` (card-selection) with `targetRole: string` (free-text, default `""`); renamed `hoveredRole` → `hoveredChip`. Dropped the now-invalid `TargetRole` type import (it was never exported from `@/lib/types`).
+- New Step 2 UI: a relative-wrapped shadcn `Input` (h-12 touch target) with a `Search` lucide icon on the left, `placeholder="e.g. Product Manager, UX Designer, Data Engineer, Security Analyst..."`, `maxLength={80}`, `aria-label="Target career role"`, controlled by `targetRole`. Live `{len}/80` char count pinned to the right (shown only when typing). Help text "Type any career path — we support thousands of roles, not just the popular ones." below.
+- Inline validation: amber "Role must be at least 2 characters." hint (AnimatePresence fade) shown when `targetRole.length > 0 && targetRole.trim().length < 2`; clears once ≥2 chars.
+- Quick-pick chips: "Popular picks" label + `flex flex-wrap gap-2` row of 6 `<button>`s built from `ROLE_LIST` (icon + name + color). Clicking a chip sets `targetRole` to that role; the chip matching `trimmedRole` renders "active/filled" (solid role-color bg + white text + full-color border, `aria-pressed={true}`); hovering an inactive chip tints its bg/border with the role's hex (via inline style + `hoveredChip` state). No indigo/blue — uses each role's own color and the violet/cyan brand tokens.
+- `canAnalyze` now: `Boolean(file) && trimmedRole.length >= 2 && !isAnalyzing` (client pre-check of the ≥2 rule; backend still runs full `sanitizeTargetRole`). `handleAnalyze` guards on `trimmedRole.length < 2` and sends `target_role: trimmedRole` in FormData — API contract unchanged (POST `/api/analyze`).
+- Left the PDF dropzone, file-selected card, error banner, loading overlay, Step 3 button, `SectionHeading`, and `goResults` handoff exactly as-is.
+- Ran `bun run lint` → clean, no errors. File is 472 lines (< 480).
+
+Stage Summary:
+- `src/components/views/UploadView.tsx` now lets users type ANY career path (2–80 chars) with 6 quick-pick chips for the popular roles. Fully responsive (375/768/1280), accessible (`aria-label` on input, `aria-pressed` on chips, `role="status"` on the amber hint), no indigo/blue, TypeScript strict, `"use client"` + default export + no props.
+- API contract unchanged; ready for the rest of the custom-roles frontend rollout (Results/Roadmap/Community views) which already use `getRoleMeta(role)` so custom roles should render correctly downstream.
+
+---
+Task ID: 7 (custom-roles frontend + verification)
+Agent: main
+Task: Update all 4 frontend views to support ANY career path the user types (not just the 6 popular roles). Verify end-to-end with Agent Browser.
+
+Work Log (subagent dispatches — all lint-clean):
+- 7-a UploadView: Replaced the 6-card role grid with a free-text `<Input>` (placeholder "e.g. Product Manager, UX Designer, ...", maxLength 80, char counter) + 6 "Popular picks" quick-pick chips that fill the input. Analyze button enables when file + trimmed role ≥2 chars. Amber hint for 1-char input. `aria-label`, `aria-pressed` on chips.
+- 7-b LandingView: Hero stat chip "6 career paths" → "Any career path". Section heading → "Works for any career path you're aiming for" + subtitle naming example custom roles. 6 cards reframed as "Popular" (Star badge). Added "Don't see your role? Just type it on the next step →" hint.
+- 7-c ResultsView + RoadmapView: Replaced `ROLE_META[role]` (Record lookup, undefined for custom roles) with `getRoleMeta(role)` (always returns valid meta: Briefcase icon + deterministic color for custom roles). Removed undefined-fallback logic. Role badge renders correctly for any role.
+- 7-d CommunityView: Replaced hardcoded `VALID_ROLES` dropdown with data-derived `availableRoles` (distinct `target_role` values from the trending response, sorted). Replaced `ROLE_BADGE_CLASS` (role→class, only 6) with `TOKEN_BADGE_CLASS` (token→class, all 10 palette colors) + `getRoleColor(role)` resolver — custom roles get a deterministic colored badge matching their chart bar.
+
+End-to-end verification (Agent Browser, desktop 1440×900):
+- [✓] Landing: "Works for any career path you're aiming for" heading, subtitle mentions PM/UX/Security/Game Dev, 6 cards with "Popular" badges, "type it on the next step" hint.
+- [✓] Upload: free-text role input with placeholder + char counter + 6 popular-pick chips. Typed "Product Manager" (custom role), chip didn't match (correct — PM is not a popular role), Analyze button enabled.
+- [✓] Analyze API: POST with `target_role=Product Manager` → 200, score 74, score_label "74% ready for Product Manager", 8 PM-relevant gaps, 12-week PM roadmap.
+- [✓] Results: score gauge 74% (emerald), role badge shows "Product Manager" with Briefcase icon in rose/red (deterministic color), gaps + strengths pills render correctly.
+- [✓] Roadmap: 12 week cards with PM-relevant topics (Product Management Fundamentals, User Research and Customer Discovery, etc.), role badge renders with Briefcase icon.
+- [✓] Community: role filter dropdown now includes "Product Manager" (derived from data) alongside "Software Development" and "All Roles". Selecting "Product Manager" filters the chart to PM skills (Stakeholder management, Business case development, Financial modeling, Go-to-market strategy), all bars consistently red (PM's deterministic color).
+- [✓] `bun run lint` clean. Dev log shows only 200 responses.
+
+Stage Summary:
+- The 6-role restriction is fully removed. Users can now type ANY career path (2-80 chars) and get a full AI analysis, roadmap, and contribute to community trends.
+- Custom roles get a deterministic color (stable hash → 10-color palette) and a generic Briefcase icon throughout the UI.
+- The community role-filter dropdown auto-includes any role that users have analyzed for (no hardcoded whitelist).
+- Backward compatible: the 6 popular roles still work as quick-pick chips with their specific icons.

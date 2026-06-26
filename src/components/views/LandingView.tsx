@@ -23,6 +23,7 @@ import {
   Scale,
   ShieldCheck,
   Sparkles,
+  Star,
   Upload,
 } from "lucide-react";
 
@@ -56,7 +57,7 @@ const FEATURES: Array<{ Icon: typeof Scale; title: string; desc: string }> = [
 ];
 
 const HERO_STATS: Array<{ value: string; label: string }> = [
-  { value: "6", label: "career paths" },
+  { value: "Any", label: "career path" },
   { value: "12-week", label: "roadmap" },
   { value: "$0", label: "cost" },
 ];
@@ -213,11 +214,16 @@ export default function LandingView() {
       <section aria-label="Career paths" className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-24">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">
-            Career Paths
+            Any Career Path
           </span>
           <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            Works for 6 career paths
+            Works for any career path you&apos;re aiming for
           </h2>
+          <p className="mt-4 text-pretty text-sm text-foreground/65 sm:text-base">
+            Type any role — Product Manager, UX Designer, Security Analyst, Game Developer,
+            or whatever you&apos;re pursuing. The 6 below are just popular picks to get you
+            started.
+          </p>
         </Reveal>
 
         <StaggerGroup className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -228,6 +234,14 @@ export default function LandingView() {
                 <div
                   className={`group glass relative h-full cursor-default rounded-2xl border border-border/40 p-6 transition-all duration-300 hover:-translate-y-1.5 ${hoverClass}`}
                 >
+                  {/* Popular badge — these are examples, not the only options */}
+                  <span
+                    className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300"
+                    aria-label="Popular pick"
+                  >
+                    <Star className="size-3 fill-amber-300 text-amber-300" />
+                    Popular
+                  </span>
                   <div
                     className="flex size-14 items-center justify-center rounded-2xl text-white"
                     style={{
@@ -244,6 +258,14 @@ export default function LandingView() {
             );
           })}
         </StaggerGroup>
+
+        {/* Custom-role hint — sets expectations for the Upload step */}
+        <Reveal variant="up" className="mt-10 flex justify-center">
+          <p className="inline-flex items-center gap-1.5 text-sm text-foreground/55">
+            Don&apos;t see your role? Just type it on the next step
+            <ArrowRight className="size-4 text-foreground/45" aria-hidden />
+          </p>
+        </Reveal>
       </section>
 
       {/* =========================== FEATURES =========================== */}

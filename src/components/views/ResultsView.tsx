@@ -32,7 +32,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { useNavigator } from "@/lib/navigator-store";
 import type { AnalysisResult } from "@/lib/types";
-import { ROLE_META } from "@/lib/role-meta";
+import { getRoleMeta } from "@/lib/role-meta";
 import { Reveal, StaggerGroup } from "@/components/motion-helpers";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -437,8 +437,8 @@ export default function ResultsView() {
   const colorToken = scoreColorToken(score);
   const colorHex = scoreColorHex(score);
   const cc = COLOR_CLASSES[colorToken];
-  const roleMeta = ROLE_META[analysis.target_role as keyof typeof ROLE_META];
-  const RoleIcon = roleMeta?.icon ?? Trophy;
+  const roleMeta = getRoleMeta(analysis.target_role);
+  const RoleIcon = roleMeta.icon;
 
   const gaugeData = [{ name: "score", value: displayScore, fill: colorHex }];
 
@@ -469,10 +469,18 @@ export default function ResultsView() {
             {/* role badge */}
             <div className="mb-6 flex justify-center">
               <div
-                className={`inline-flex items-center gap-2 rounded-full border ${cc.border} ${cc.bg} ${cc.text} px-4 py-1.5 text-sm font-medium`}
+                className={`inline-flex items-center gap-2 rounded-full border ${cc.border} ${cc.bg} ${cc.text} pl-1.5 pr-3.5 py-1.5 text-sm font-medium`}
               >
-                <RoleIcon className="size-4" />
-                {analysis.target_role}
+                <span
+                  aria-hidden="true"
+                  className="inline-flex size-6 items-center justify-center rounded-md text-white shadow-sm"
+                  style={{
+                    background: `linear-gradient(135deg, ${roleMeta.color.hex}, ${roleMeta.color.hex}aa)`,
+                  }}
+                >
+                  <RoleIcon className="size-3.5" />
+                </span>
+                <span>{analysis.target_role}</span>
               </div>
             </div>
 

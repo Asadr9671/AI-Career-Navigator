@@ -8,7 +8,9 @@
  *   GET /api/community/trending?role= → top-15 skill bar chart + ranked table
  *
  * All data is anonymized — no personal info is ever displayed.
- * Color language: violet / cyan / amber / emerald / rose / teal (no indigo / blue).
+ * Color language: violet / cyan / amber / emerald / rose / teal for the 6
+ * popular roles, plus fuchsia / lime / orange / sky deterministically
+ * assigned to any custom role via `getRoleColor` (no indigo / blue).
  */
 import * as React from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -36,8 +38,7 @@ import { useNavigator } from "@/lib/navigator-store";
 import {
   CommunityStats,
   TrendingSkill,
-  VALID_ROLES,
-  ROLE_COLORS,
+  getRoleColor,
 } from "@/lib/types";
 import { Reveal, StaggerGroup } from "@/components/motion-helpers";
 import { Button } from "@/components/ui/button";
@@ -60,15 +61,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-/** Role → colored badge class string. Static so the JIT compiler can see them. */
-const ROLE_BADGE_CLASS: Record<string, string> = {
-  "Software Development":
-    "bg-violet-500/15 text-violet-300 border-violet-500/30",
-  "AI/ML Engineer": "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
-  "DevOps Engineer": "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  "Data Science": "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  "Full-Stack Developer": "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  "Cloud Engineer": "bg-teal-500/15 text-teal-300 border-teal-500/30",
+/**
+ * Color-token → colored badge class string.
+ * Covers the full 10-color brand palette used by `getRoleColor`, so EVERY
+ * role (popular or custom) gets a badge whose color matches its chart bar.
+ * Static class strings so the Tailwind JIT compiler can see them.
+ */
+const TOKEN_BADGE_CLASS: Record<string, string> = {
+  violet: "bg-violet-500/15 text-violet-300 border-violet-500/30",
+  cyan: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
+  amber: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  emerald: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  rose: "bg-rose-500/15 text-rose-300 border-rose-500/30",
+  teal: "bg-teal-500/15 text-teal-300 border-teal-500/30",
+  fuchsia: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30",
+  lime: "bg-lime-500/15 text-lime-300 border-lime-500/30",
+  orange: "bg-orange-500/15 text-orange-300 border-orange-500/30",
+  sky: "bg-sky-500/15 text-sky-300 border-sky-500/30",
 };
 
 /** Accent → icon-square gradient class string. */
@@ -81,15 +90,15 @@ const ACCENT_SQUARE: Record<"violet" | "cyan" | "amber" | "rose", string> = {
   rose: "bg-gradient-to-br from-rose-500/30 to-rose-500/5 text-rose-300 border border-rose-500/20",
 };
 
+/** Resolve a badge class for ANY role via its deterministic color token. */
 function roleBadgeClass(role: string): string {
-  return (
-    ROLE_BADGE_CLASS[role] ??
-    "bg-violet-500/15 text-violet-300 border-violet-500/30"
-  );
+  const token = getRoleColor(role).token;
+  return TOKEN_BADGE_CLASS[token] ?? TOKEN_BADGE_CLASS.violet;
 }
 
+/** Resolve a chart-bar hex color for ANY role (popular or custom). */
 function roleHex(role: string): string {
-  return ROLE_COLORS[role]?.hex ?? ROLE_COLORS["Software Development"].hex;
+  return getRoleColor(role).hex;
 }
 
 function truncate(s: string, n: number): string {
@@ -136,6 +145,9 @@ function CommunityView() {
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [trending, setTrending] = useState<TrendingSkill[]>([]);
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  /** Distinct target roles seen in the community data — drives the filter
+   *  dropdown so ANY analyzed role (not just the 6 popular ones) is selectable. */
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
 
   const [loadingStats, setLoadingStats] = useState<boolean>(true);
   const [loadingTrending, setLoadingTrending] = useState<boolean>(true);
@@ -176,10 +188,19 @@ function CommunityView() {
       if (!res.ok || json.error) {
         throw new Error(json?.message || `Request failed (${res.status})`);
       }
-      setTrending(
-        Array.isArray(json.data) ? (json.data as TrendingSkill[]) : [],
-      );
+      const data = Array.isArray(json.data)
+        ? (json.data as TrendingSkill[])
+        : [];
+      setTrending(data);
       setVisibleCount(10);
+      // Derive the role list only from the UNFILTERED fetch so the dropdown
+      // stays stable (doesn't shrink) when a specific role is selected.
+      if (role === "all") {
+        const roles = Array.from(
+          new Set(data.map((d) => d.target_role)),
+        ).sort((a, b) => a.localeCompare(b));
+        setAvailableRoles(roles);
+      }
     } catch (e) {
       setErrorTrending(
         e instanceof Error ? e.message : "Failed to load trending skills",
@@ -340,7 +361,7 @@ function CommunityView() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
-                    {VALID_ROLES.map((r) => (
+                    {availableRoles.map((r) => (
                       <SelectItem key={r} value={r}>
                         {r}
                       </SelectItem>

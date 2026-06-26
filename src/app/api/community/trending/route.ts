@@ -1,20 +1,21 @@
 /**
  * GET /api/community/trending?role=<optional>
  * Returns top 15 skill_trends ordered by frequency desc.
- * If `role` query is provided and matches a VALID_ROLE, filter by target_role.
+ * If `role` query is provided (ANY string — not limited to a whitelist),
+ * filter by exact target_role match. Empty/non-string role → return all.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import type { ApiResponse, TrendingSkill } from "@/lib/types";
-import { VALID_ROLES as ROLES } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
-  const role = url.searchParams.get("role");
-
-  const where = role && (ROLES as readonly string[]).includes(role) ? { targetRole: role } : undefined;
+  const roleParam = url.searchParams.get("role");
+  // Accept any non-empty role string (trimmed). No whitelist.
+  const role = typeof roleParam === "string" ? roleParam.trim().replace(/\s+/g, " ") : "";
+  const where = role.length > 0 && role.length <= 80 ? { targetRole: role } : undefined;
 
   try {
     const rows = await db.skillTrend.findMany({

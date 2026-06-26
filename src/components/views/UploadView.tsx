@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * UploadView — PDF dropzone + role selector + analyze button.
+ * UploadView — PDF dropzone + free-text role selector + analyze button.
  * On success hands the AnalysisResult to the navigator store (goResults).
  * All visual states animated with framer-motion + AnimatePresence.
  * Palette: violet/cyan accent + per-role hex (no indigo/blue).
@@ -9,14 +9,26 @@
 import * as React from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
-import { UploadCloud, FileText, CheckCircle2, X, Loader2, AlertCircle, FileUp } from "lucide-react";
+import {
+  UploadCloud,
+  FileText,
+  CheckCircle2,
+  X,
+  Loader2,
+  AlertCircle,
+  FileUp,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Reveal, StaggerGroup } from "@/components/motion-helpers";
+import { Input } from "@/components/ui/input";
+import { Reveal } from "@/components/motion-helpers";
 import { useNavigator } from "@/lib/navigator-store";
 import { ROLE_LIST } from "@/lib/role-meta";
-import type { AnalysisResult, ApiResponse, TargetRole } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import type { AnalysisResult, ApiResponse } from "@/lib/types";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ROLE_MAX_LEN = 80;
 
 const LOADING_MESSAGES = [
   "Reading your resume...",
@@ -36,11 +48,12 @@ function UploadView() {
   const goResults = useNavigator((s) => s.goResults);
 
   const [file, setFile] = React.useState<File | null>(null);
-  const [targetRole, setTargetRole] = React.useState<TargetRole | null>(null);
+  // Free-text target role. The backend sanitizes further (2–80 chars, no control chars).
+  const [targetRole, setTargetRole] = React.useState<string>("");
   const [error, setError] = React.useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = React.useState(false);
   const [statusIndex, setStatusIndex] = React.useState(0);
-  const [hoveredRole, setHoveredRole] = React.useState<string | null>(null);
+  const [hoveredChip, setHoveredChip] = React.useState<string | null>(null);
 
   // Rotate the loading status messages while the LLM is working.
   React.useEffect(() => {
@@ -97,17 +110,21 @@ function UploadView() {
     setError(null);
   };
 
-  const canAnalyze = Boolean(file) && Boolean(targetRole) && !isAnalyzing;
+  const trimmedRole = targetRole.trim();
+  const showRoleHint = targetRole.length > 0 && trimmedRole.length < 2;
+  // Pre-check the ≥2 char rule so the button isn't enabled prematurely.
+  // The backend does the full sanitizeTargetRole validation.
+  const canAnalyze = Boolean(file) && trimmedRole.length >= 2 && !isAnalyzing;
 
   const handleAnalyze = async () => {
-    if (!file || !targetRole) return;
+    if (!file || trimmedRole.length < 2) return;
     setError(null);
     setIsAnalyzing(true);
     setStatusIndex(0);
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("target_role", targetRole);
+      fd.append("target_role", trimmedRole);
 
       const res = await fetch("/api/analyze", { method: "POST", body: fd });
       const json: ApiResponse<AnalysisResult> = (await res.json()) as ApiResponse<AnalysisResult>;
@@ -210,83 +227,95 @@ function UploadView() {
         </div>
       </section>
 
-      {/* ───────── Step 2 — role grid ───────── */}
+      {/* ───────── Step 2 — role selector (free text + quick-pick chips) ───────── */}
       <section className="mb-14">
         <SectionHeading step="02" title="Select your target role" />
-        <StaggerGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {ROLE_LIST.map((r, idx) => {
-            const Icon = r.icon;
-            const selected = targetRole === r.role;
-            const isHovered = hoveredRole === r.role;
-            const glowStyle: React.CSSProperties =
-              selected || isHovered
-                ? {
-                    borderColor: selected ? undefined : `${r.color.hex}80`,
-                    boxShadow: `0 12px 36px -14px ${r.color.hex}66`,
-                  }
-                : {};
+        <Reveal className="mx-auto max-w-2xl">
+          {/* Free-text input with search icon + live char count */}
+          <div className="relative">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              type="text"
+              value={targetRole}
+              onChange={(e) => setTargetRole(e.target.value)}
+              maxLength={ROLE_MAX_LEN}
+              aria-label="Target career role"
+              placeholder="e.g. Product Manager, UX Designer, Data Engineer, Security Analyst..."
+              className="h-12 rounded-xl border-white/15 bg-transparent pl-10 pr-16 text-base text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:border-violet-400/80 focus-visible:ring-violet-400/20 sm:text-sm"
+            />
+            {targetRole.length > 0 && (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs tabular-nums text-muted-foreground"
+              >
+                {targetRole.length}/{ROLE_MAX_LEN}
+              </span>
+            )}
+          </div>
 
-            return (
-              <Reveal key={r.role} i={idx}>
-                <motion.button
+          {/* Help text + inline validation hint */}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Type any career path — we support thousands of roles, not just the popular ones.
+          </p>
+          <AnimatePresence>
+            {showRoleHint && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+                className="mt-1 text-xs text-amber-400/90"
+                role="status"
+              >
+                Role must be at least 2 characters.
+              </motion.p>
+            )}
+          </AnimatePresence>
+
+          {/* Quick-pick suggestion chips (the 6 POPULAR_ROLES) */}
+          <p className="mb-2 mt-5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Popular picks
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {ROLE_LIST.map((r) => {
+              const Icon = r.icon;
+              const active = trimmedRole === r.role;
+              const hovered = hoveredChip === r.role;
+              const chipStyle: React.CSSProperties = active
+                ? { backgroundColor: r.color.hex, borderColor: r.color.hex, color: "#ffffff" }
+                : hovered
+                  ? { backgroundColor: `${r.color.hex}1a`, borderColor: `${r.color.hex}80` }
+                  : {};
+
+              return (
+                <button
+                  key={r.role}
                   type="button"
                   onClick={() => setTargetRole(r.role)}
-                  onMouseEnter={() => setHoveredRole(r.role)}
-                  onMouseLeave={() => setHoveredRole(null)}
-                  onFocus={() => setHoveredRole(r.role)}
-                  onBlur={() => setHoveredRole(null)}
-                  aria-pressed={selected}
-                  whileHover={{ y: -4 }}
-                  whileTap={{ scale: 0.98 }}
-                  style={glowStyle}
-                  className={`relative w-full overflow-hidden rounded-2xl border p-5 text-left transition-colors ${
-                    selected
-                      ? "border-violet-400/80 bg-violet-500/10"
-                      : "border-white/10 glass hover:border-white/20"
-                  }`}
+                  onMouseEnter={() => setHoveredChip(r.role)}
+                  onMouseLeave={() => setHoveredChip(null)}
+                  onFocus={() => setHoveredChip(r.role)}
+                  onBlur={() => setHoveredChip(null)}
+                  aria-pressed={active}
+                  style={chipStyle}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/40",
+                    !active &&
+                      !hovered &&
+                      "border-white/15 text-muted-foreground hover:text-foreground",
+                    hovered && "text-foreground",
+                  )}
                 >
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300"
-                    style={{
-                      background: `radial-gradient(60% 60% at 50% 0%, ${r.color.hex}22, transparent 70%)`,
-                      opacity: isHovered && !selected ? 1 : 0,
-                    }}
-                  />
-                  <div className="relative flex items-start gap-4">
-                    <div
-                      className="flex size-11 shrink-0 items-center justify-center rounded-xl text-white"
-                      style={{
-                        background: `linear-gradient(135deg, ${r.color.hex}, ${r.color.hex}aa)`,
-                        boxShadow: `0 8px 22px -8px ${r.color.hex}aa`,
-                      }}
-                    >
-                      <Icon className="size-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground">{r.role}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{r.tagline}</p>
-                    </div>
-                  </div>
-                  <AnimatePresence>
-                    {selected && (
-                      <motion.span
-                        layoutId="role-check"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                        className="absolute right-3 top-3 flex size-6 items-center justify-center rounded-full bg-violet-500 text-white shadow-glow-violet"
-                      >
-                        <CheckCircle2 className="size-4" />
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </motion.button>
-              </Reveal>
-            );
-          })}
-        </StaggerGroup>
+                  <Icon className="size-3.5" aria-hidden="true" />
+                  {r.role}
+                </button>
+              );
+            })}
+          </div>
+        </Reveal>
       </section>
 
       {/* ───────── Step 3 — analyze button ───────── */}
