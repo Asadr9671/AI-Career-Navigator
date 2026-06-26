@@ -98,6 +98,8 @@ export async function POST(req: NextRequest) {
         targetRole: result.target_role,
         readinessScore: result.score,
         scoreLabel: result.score_label,
+        scoreJustification: result.score_justification ?? null,
+        dimensions: result.dimensions ? JSON.stringify(result.dimensions) : null,
         gaps: JSON.stringify(result.gaps),
         strengths: JSON.stringify(result.strengths),
         roadmap: JSON.stringify(result.roadmap),

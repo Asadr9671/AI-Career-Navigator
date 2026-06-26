@@ -12,14 +12,16 @@ datasource db {
 
 // Resume analysis results — JSON fields are stored as text (SQLite limitation)
 model Analysis {
-  id              String   @id @default(cuid())
-  targetRole      String
-  readinessScore  Int
-  scoreLabel      String
-  gaps            String // JSON-stringified string[]
-  strengths       String // JSON-stringified string[]
-  roadmap         String // JSON-stringified RoadmapWeek[]
-  createdAt       DateTime @default(now())
+  id                 String   @id @default(cuid())
+  targetRole         String
+  readinessScore     Int
+  scoreLabel         String
+  scoreJustification String?  // 1-2 sentence justification citing resume content
+  dimensions         String?  // JSON-stringified DimensionScore[]
+  gaps               String   // JSON-stringified string[]
+  strengths          String   // JSON-stringified string[]
+  roadmap            String   // JSON-stringified RoadmapWeek[]
+  createdAt          DateTime @default(now())
 
   @@index([targetRole])
   @@index([createdAt])

@@ -27,11 +27,12 @@ import {
   X,
   Check,
   Sparkles,
+  HelpCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useNavigator } from "@/lib/navigator-store";
-import type { AnalysisResult } from "@/lib/types";
+import type { AnalysisResult, DimensionScore } from "@/lib/types";
 import { getRoleMeta } from "@/lib/role-meta";
 import { Reveal, StaggerGroup } from "@/components/motion-helpers";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,31 @@ const COLOR_CLASSES: Record<
     to: "to-emerald-400",
   },
 };
+
+/**
+ * Human-readable labels for the 5 readiness dimensions returned by the AI.
+ * Keys are the raw `name` strings from DimensionScore; unknown names fall
+ * back to a Title-Cased version via `dimensionLabel()`.
+ */
+const DIMENSION_LABELS: Record<string, string> = {
+  relevant_experience: "Relevant Experience",
+  technical_skills: "Technical Skills",
+  education: "Education",
+  projects_portfolio: "Projects & Portfolio",
+  leadership_impact: "Leadership & Impact",
+};
+
+/** Fallback: convert snake_case → Title Case for unknown dimension names. */
+function humanizeDimensionName(name: string): string {
+  return name
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Resolve a dimension's raw name → human-readable label. */
+function dimensionLabel(name: string): string {
+  return DIMENSION_LABELS[name] ?? humanizeDimensionName(name);
+}
 
 /** Word-wrap a long line to fit a max pixel width using the embedded font. */
 function wrapText(
@@ -208,6 +234,65 @@ async function exportPDF(
       }
     );
     y -= lineH * 2;
+
+    // Score justification (may be absent on older analyses)
+    if (analysis.score_justification && analysis.score_justification.trim()) {
+      cover.drawText("Score Justification:", {
+        x: M,
+        y,
+        size: 12,
+        font: helvB,
+        color: rgb(0.22, 0.22, 0.28),
+      });
+      y -= lineH;
+      for (const ln of wrapText(
+        analysis.score_justification,
+        helv,
+        10,
+        W - M * 2
+      )) {
+        if (y < M + lineH) break;
+        cover.drawText(ln, {
+          x: M + 4,
+          y,
+          size: 10,
+          font: helv,
+          color: rgb(0.3, 0.3, 0.35),
+        });
+        y -= 14;
+      }
+      y -= lineH;
+    }
+
+    // Dimension breakdown (may be absent on older analyses)
+    if (analysis.dimensions && analysis.dimensions.length > 0) {
+      cover.drawText("Score Breakdown:", {
+        x: M,
+        y,
+        size: 12,
+        font: helvB,
+        color: rgb(0.22, 0.22, 0.28),
+      });
+      y -= lineH;
+      for (const dim of analysis.dimensions) {
+        const label = dimensionLabel(dim.name);
+        const evidencePart = dim.evidence ? ` — ${dim.evidence}` : "";
+        const line = `•  ${label}: ${dim.score}/100${evidencePart}`;
+        for (const ln of wrapText(line, helv, 10, W - M * 2 - 8)) {
+          if (y < M + lineH) break;
+          cover.drawText(ln, {
+            x: M + 8,
+            y,
+            size: 10,
+            font: helv,
+            color: rgb(0.25, 0.25, 0.3),
+          });
+          y -= 14;
+        }
+        y -= 2;
+      }
+      y -= lineH;
+    }
 
     // Gaps
     cover.drawText("Skills to Develop", {
@@ -551,10 +636,118 @@ export default function ResultsView() {
           </Card>
         </Reveal>
 
+        {/* ----------------------- Why this score? breakdown ---------------------- */}
+        {((analysis.score_justification && analysis.score_justification.trim()) ||
+          (analysis.dimensions && analysis.dimensions.length > 0)) && (
+          <Reveal i={1}>
+            <Card className="glass-strong rounded-2xl border-white/10 p-6 sm:p-8">
+              <div className="mb-5 flex items-center gap-2.5">
+                <div className="bg-violet-500/10 text-violet-300 ring-violet-500/20 flex size-9 items-center justify-center rounded-lg ring-1">
+                  <HelpCircle className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">
+                    Why this score?
+                  </h3>
+                  <p className="text-muted-foreground text-xs">
+                    Evidence-based breakdown of your readiness
+                  </p>
+                </div>
+              </div>
+
+              {/* A. Score justification — quote-style block */}
+              {analysis.score_justification &&
+                analysis.score_justification.trim() && (
+                  <blockquote
+                    className="mb-6 border-l-2 py-1 pl-4 text-base italic leading-relaxed text-foreground/90 sm:text-lg"
+                    style={{ borderColor: colorHex }}
+                  >
+                    {analysis.score_justification}
+                  </blockquote>
+                )}
+
+              {/* B. Dimension breakdown — 5 progress-bar rows */}
+              {analysis.dimensions && analysis.dimensions.length > 0 && (
+                <StaggerGroup className="flex flex-col gap-4" stagger={0.07}>
+                  {analysis.dimensions.map((dim: DimensionScore, idx: number) => {
+                    const label = dimensionLabel(dim.name);
+                    const dimHex = scoreColorHex(dim.score);
+                    const dimToken = scoreColorToken(dim.score);
+                    const dc = COLOR_CLASSES[dimToken];
+                    const clamped = Math.max(0, Math.min(100, dim.score));
+                    return (
+                      <Reveal
+                        key={`${dim.name}-${idx}`}
+                        as="div"
+                        variant="up"
+                        i={idx}
+                      >
+                        <div>
+                          <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                            <span className="text-sm font-medium text-foreground">
+                              {label}
+                            </span>
+                            <span
+                              className={`text-sm font-semibold tabular-nums ${dc.text}`}
+                            >
+                              {dim.score}
+                            </span>
+                          </div>
+                          <div
+                            role="progressbar"
+                            aria-valuenow={dim.score}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label={`${label}: ${dim.score} out of 100`}
+                            className="h-2.5 w-full overflow-hidden rounded-full bg-white/10"
+                          >
+                            <div
+                              className="h-full rounded-full transition-all duration-700 ease-out"
+                              style={{
+                                width: `${clamped}%`,
+                                background: `linear-gradient(90deg, ${dimHex}, ${dimHex}cc)`,
+                              }}
+                            />
+                          </div>
+                          {dim.evidence && (
+                            <p className="text-muted-foreground mt-1.5 text-xs leading-relaxed">
+                              {dim.evidence}
+                            </p>
+                          )}
+                        </div>
+                      </Reveal>
+                    );
+                  })}
+                </StaggerGroup>
+              )}
+
+              {/* C. Calibration legend */}
+              <div className="text-muted-foreground mt-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-white/5 pt-4 text-[11px]">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-block size-2 rounded-full bg-rose-500" />
+                  0–39 significant gaps
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-block size-2 rounded-full bg-amber-500" />
+                  40–69 competitive
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-block size-2 rounded-full bg-emerald-600" />
+                  70–84 strong senior
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-block size-2 rounded-full bg-emerald-400" />
+                  85–100 exceptional
+                </span>
+              </div>
+            </Card>
+          </Reveal>
+        )}
+
         {/* --------------------- Gaps + Strengths two-up grid ------------------- */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* skill gaps */}
-          <Reveal i={1}>
+          <Reveal i={2}>
             <Card className="glass h-full rounded-2xl border-white/10 p-6">
               <div className="mb-4 flex items-center gap-2.5">
                 <div className="bg-rose-500/10 text-rose-300 flex size-9 items-center justify-center rounded-lg ring-1 ring-rose-500/20">
@@ -595,7 +788,7 @@ export default function ResultsView() {
           </Reveal>
 
           {/* strengths */}
-          <Reveal i={2}>
+          <Reveal i={3}>
             <Card className="glass h-full rounded-2xl border-white/10 p-6">
               <div className="mb-4 flex items-center gap-2.5">
                 <div className="bg-emerald-500/10 text-emerald-300 flex size-9 items-center justify-center rounded-lg ring-1 ring-emerald-500/20">
@@ -637,7 +830,7 @@ export default function ResultsView() {
         </div>
 
         {/* ----------------------------- Action row ----------------------------- */}
-        <Reveal i={3}>
+        <Reveal i={4}>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Button
               onClick={() => goRoadmap(analysis)}

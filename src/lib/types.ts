@@ -30,11 +30,22 @@ export interface RoadmapWeek {
   project: string;
 }
 
+/** A single dimension of the multi-dimensional readiness score. */
+export interface DimensionScore {
+  name: string;
+  score: number;
+  evidence: string;
+}
+
 export interface AnalysisResult {
   id?: string;
   target_role: string;
   score: number;
   score_label: string;
+  /** 1-2 sentence justification citing specific resume content — proves the score is real-time. */
+  score_justification?: string;
+  /** The 5-dimension breakdown behind the final score. */
+  dimensions?: DimensionScore[];
   gaps: string[];
   strengths: string[];
   roadmap: RoadmapWeek[];

@@ -4,7 +4,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import type { AnalysisResult, ApiResponse } from "@/lib/types";
+import type { AnalysisResult, ApiResponse, DimensionScore } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -28,10 +28,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   let gaps: string[] = [];
   let strengths: string[] = [];
   let roadmap: AnalysisResult["roadmap"] = [];
+  let dimensions: DimensionScore[] | undefined;
   try {
     gaps = JSON.parse(row.gaps || "[]");
     strengths = JSON.parse(row.strengths || "[]");
     roadmap = JSON.parse(row.roadmap || "[]");
+    if (row.dimensions) dimensions = JSON.parse(row.dimensions);
   } catch (e) {
     console.error("[analyze/[id]] JSON parse failed:", e);
   }
@@ -41,6 +43,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     target_role: row.targetRole,
     score: row.readinessScore,
     score_label: row.scoreLabel,
+    score_justification: row.scoreJustification ?? undefined,
+    dimensions,
     gaps,
     strengths,
     roadmap,
