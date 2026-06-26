@@ -1,12 +1,13 @@
 import type { AnalysisResult, CommunityStats, TrendingSkill } from "./types";
 import { db } from "./db";
 
-const BUCKET_URL = "https://kvdb.io/T4XYtWbjCmC4SfRgYadytt/analyses";
+const BUCKET_URL = "https://jsonblob.com/api/jsonBlob/019f057b-61d2-768e-b039-92f41311f7b9";
 
 // Helper to fetch all analyses from the global KV store
 async function fetchGlobalAnalyses(): Promise<AnalysisResult[]> {
   try {
     const res = await fetch(BUCKET_URL, {
+      headers: { "Accept": "application/json" },
       next: { revalidate: 10 } // Cache for 10 seconds to avoid exceeding API limits
     });
     if (res.status === 404) return [];
@@ -45,7 +46,10 @@ export async function pushToCommunityStore(result: AnalysisResult) {
     // 3. Write back to KV store
     const res = await fetch(BUCKET_URL, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
       body: JSON.stringify(trimmed)
     });
     
