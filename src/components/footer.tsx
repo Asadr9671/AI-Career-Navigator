@@ -34,7 +34,7 @@ export function Footer() {
               Made with <Heart className="h-3.5 w-3.5 text-rose-500" /> for builders
             </span>
             <a
-              href="https://github.com"
+              href="https://github.com/Asadr9671/AI-Career-Navigator"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 hover:text-foreground transition"
